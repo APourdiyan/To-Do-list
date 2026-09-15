@@ -1,0 +1,6 @@
+{
+  "name": "دفتر زندگی من",
+  "description": "سامانه برنامه‌ریزی فردی و مدیریت زمان مبتنی بر تقویم هجری شمسی (RTL-Native Persian Personal Planning OS)",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}

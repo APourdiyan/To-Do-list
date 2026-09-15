@@ -1,0 +1,103 @@
+import React, { useState, useEffect, useRef } from 'react';
+import { useStore, store } from '../../store/useStore';
+import { getTodayJalali, formatJalaliDate } from '../../lib/date/jalali';
+import { PenLine, Check, Save, Sparkles, BookOpen } from 'lucide-react';
+
+export const TodayJournalPad: React.FC = () => {
+  const { dailyEntries } = useStore();
+  const today = getTodayJalali();
+  const entry = dailyEntries[today.dateStr] || { date: today.dateStr };
+
+  const [text, setText] = useState(entry.note || '');
+  const [savedStatus, setSavedStatus] = useState<'idle' | 'saved'>('idle');
+  const timerRef = useRef<NodeJS.Timeout | null>(null);
+
+  useEffect(() => {
+    setText(entry.note || '');
+  }, [entry.note]);
+
+  const handleChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
+    const val = e.target.value;
+    setText(val);
+    setSavedStatus('idle');
+
+    if (timerRef.current) {
+      clearTimeout(timerRef.current);
+    }
+
+    timerRef.current = setTimeout(() => {
+      store.setDailyNote(today.dateStr, val);
+      setSavedStatus('saved');
+      setTimeout(() => setSavedStatus('idle'), 2500);
+    }, 600);
+  };
+
+  const handleManualSave = () => {
+    if (timerRef.current) clearTimeout(timerRef.current);
+    store.setDailyNote(today.dateStr, text);
+    setSavedStatus('saved');
+    setTimeout(() => setSavedStatus('idle'), 2500);
+  };
+
+  return (
+    <section className="bg-white border border-stone-200/90 rounded-2xl p-4 sm:p-6 shadow-2xs space-y-3" dir="rtl">
+      <div className="flex items-center justify-between border-b border-stone-100 pb-3">
+        <div className="flex items-center gap-2.5">
+          <div className="w-8 h-8 rounded-xl bg-stone-100 text-stone-700 flex items-center justify-center shrink-0">
+            <PenLine size={16} />
+          </div>
+          <div>
+            <h3 className="text-xs sm:text-sm font-bold text-stone-900 flex items-center gap-2">
+              <span>حاشیه و یادداشت آزاد امروز</span>
+              <span className="text-[10px] font-normal text-stone-400">
+                (تخلیه ذهن، ایده، گزارش شبانه)
+              </span>
+            </h3>
+            <p className="text-[11px] text-stone-500">
+              مثل حاشیه سفید سررسید شخصی‌ات؛ هرچیزی که تسک نیست ولی می‌خواهی ثبت بماند.
+            </p>
+          </div>
+        </div>
+
+        <div className="flex items-center gap-2">
+          {savedStatus === 'saved' && (
+            <span className="text-[11px] font-medium text-emerald-700 bg-emerald-50 border border-emerald-200 px-2 py-0.5 rounded-md flex items-center gap-1">
+              <Check size={12} className="stroke-[2.5]" />
+              <span>ذخیره شد</span>
+            </span>
+          )}
+          <button
+            onClick={handleManualSave}
+            className="text-xs text-stone-600 hover:text-stone-900 bg-stone-50 hover:bg-stone-100 border border-stone-200 px-2.5 py-1 rounded-lg flex items-center gap-1 transition-colors"
+            title="ذخیره یادداشت"
+          >
+            <Save size={13} />
+            <span>ذخیره</span>
+          </button>
+        </div>
+      </div>
+
+      {/* بافت کاغذ خط‌دار یادداشت (Ruled Paper Texture Effect) */}
+      <div className="relative rounded-xl border border-stone-200 bg-[#fefdfb] p-1 overflow-hidden">
+        <textarea
+          value={text}
+          onChange={handleChange}
+          rows={4}
+          placeholder="افکار پراکنده امروز، نکات جلسات، آموخته‌های روز، یا حس و حالی که می‌خواهی در تاریخ امروز برایت بماند بنویس..."
+          className="w-full bg-transparent p-3 text-xs sm:text-sm leading-relaxed text-stone-800 placeholder:text-stone-400 focus:outline-hidden resize-y min-h-[100px]"
+          style={{
+            backgroundImage:
+              'linear-gradient(transparent, transparent 27px, #f0ede6 28px)',
+            backgroundSize: '100% 28px',
+            lineHeight: '28px',
+          }}
+        />
+      </div>
+
+      <div className="flex items-center justify-between text-[11px] text-stone-400 pt-1">
+        <span>ثبت‌شده برای گاه‌شمار امروز: {formatJalaliDate(today.dateStr, { showYear: false })}</span>
+        <span>ذخیره‌سازی خودکار در مرورگر</span>
+      </div>
+    </section>
+  );
+};

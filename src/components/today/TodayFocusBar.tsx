@@ -1,0 +1,166 @@
+import React, { useState, useEffect } from 'react';
+import { useStore, store } from '../../store/useStore';
+import { getTodayJalali } from '../../lib/date/jalali';
+import { MoodType } from '../../types';
+import {
+  Sparkles,
+  Smile,
+  Zap,
+  Coffee,
+  Moon,
+  Feather,
+  Check,
+  Edit2,
+  X,
+  Plus,
+} from 'lucide-react';
+
+const MOODS: { id: MoodType; label: string; icon: React.ReactNode; activeColor: string }[] = [
+  { id: 'focused', label: 'متمرکز', icon: <Sparkles size={12} />, activeColor: 'bg-emerald-900 text-emerald-100 border-emerald-800' },
+  { id: 'calm', label: 'آرام', icon: <Feather size={12} />, activeColor: 'bg-teal-900 text-teal-100 border-teal-800' },
+  { id: 'energetic', label: 'پرانرژی', icon: <Zap size={12} />, activeColor: 'bg-amber-900 text-amber-100 border-amber-800' },
+  { id: 'reflective', label: 'متأمل', icon: <Coffee size={12} />, activeColor: 'bg-stone-800 text-stone-200 border-stone-700' },
+  { id: 'tired', label: 'آرامش/مدارا', icon: <Moon size={12} />, activeColor: 'bg-rose-900 text-rose-100 border-rose-800' },
+];
+
+export const TodayFocusBar: React.FC = () => {
+  const { dailyEntries } = useStore();
+  const today = getTodayJalali();
+  const entry = dailyEntries[today.dateStr] || { date: today.dateStr };
+
+  const [isEditing, setIsEditing] = useState(false);
+  const [focusInput, setFocusInput] = useState(entry.focus || '');
+
+  useEffect(() => {
+    setFocusInput(entry.focus || '');
+  }, [entry.focus]);
+
+  const handleSave = () => {
+    store.setDailyFocus(today.dateStr, focusInput.trim());
+    setIsEditing(false);
+  };
+
+  const handleKeyDown = (e: React.KeyboardEvent) => {
+    if (e.key === 'Enter') {
+      e.preventDefault();
+      handleSave();
+    } else if (e.key === 'Escape') {
+      setFocusInput(entry.focus || '');
+      setIsEditing(false);
+    }
+  };
+
+  const handleSelectMood = (moodId: MoodType) => {
+    const nextMood = entry.mood === moodId ? undefined : moodId;
+    store.setDailyMood(today.dateStr, nextMood);
+  };
+
+  return (
+    <div
+      className="bg-white border border-stone-200/90 rounded-2xl p-3 sm:p-4 shadow-2xs space-y-3"
+      dir="rtl"
+    >
+      {/* سطر اصلی نیت/تمرکز امروز: مینیمال و آرام */}
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2.5">
+        <div className="flex items-center gap-2 flex-1 min-w-0">
+          <div className="w-6 h-6 rounded-lg bg-amber-100/90 text-amber-800 flex items-center justify-center shrink-0">
+            <Sparkles size={13} className="stroke-[2.5]" />
+          </div>
+
+          <span className="text-xs font-bold text-stone-800 shrink-0">
+            تمرکز امروز:
+          </span>
+
+          {/* متن نیت به صورت تک‌خطی آرام و زیبا */}
+          {!isEditing && (
+            <div
+              onClick={() => setIsEditing(true)}
+              className="flex-1 min-w-0 cursor-pointer group"
+            >
+              {entry.focus ? (
+                <span className="text-xs sm:text-[13px] font-medium text-stone-900 group-hover:text-amber-900 transition-colors truncate block">
+                  « {entry.focus} »
+                </span>
+              ) : (
+                <span className="text-xs text-stone-400 group-hover:text-stone-600 transition-colors flex items-center gap-1">
+                  <span>ثبت یک جمله کوتاه برای جهت‌گیری امروز...</span>
+                  <Plus size={12} className="text-stone-400" />
+                </span>
+              )}
+            </div>
+          )}
+        </div>
+
+        {/* دکمه ویرایش یا ثبت در صورت عدم ویرایش */}
+        {!isEditing && (
+          <div className="flex items-center gap-1 self-end sm:self-auto shrink-0">
+            <button
+              onClick={() => setIsEditing(true)}
+              className="text-[11px] text-stone-500 hover:text-stone-800 flex items-center gap-1 px-2 py-1 rounded-md hover:bg-stone-100 transition-colors cursor-pointer"
+            >
+              <Edit2 size={11} />
+              <span>{entry.focus ? 'ویرایش' : 'افزودن'}</span>
+            </button>
+          </div>
+        )}
+      </div>
+
+      {/* حالت ادیت جمع‌وجور */}
+      {isEditing && (
+        <div className="flex items-center gap-1.5 pt-1">
+          <input
+            type="text"
+            value={focusInput}
+            onChange={(e) => setFocusInput(e.target.value)}
+            onKeyDown={handleKeyDown}
+            placeholder="مثال: اولویت با تحویل پروژه و پیاده‌روی عصرگاهی..."
+            autoFocus
+            className="flex-1 px-3 py-1.5 bg-stone-50 border border-stone-300 focus:border-stone-800 rounded-xl text-xs sm:text-sm font-medium text-stone-900 placeholder:text-stone-400 focus:outline-hidden focus:bg-white transition-all"
+          />
+          <button
+            onClick={handleSave}
+            className="px-3 py-1.5 bg-stone-900 hover:bg-stone-800 text-stone-100 rounded-xl text-xs font-bold flex items-center gap-1 transition-colors shrink-0 cursor-pointer"
+          >
+            <Check size={12} />
+            <span>ثبت</span>
+          </button>
+          <button
+            onClick={() => {
+              setFocusInput(entry.focus || '');
+              setIsEditing(false);
+            }}
+            className="p-1.5 text-stone-400 hover:text-stone-700 rounded-lg hover:bg-stone-100 text-xs transition-colors cursor-pointer"
+            title="انصراف"
+          >
+            <X size={14} />
+          </button>
+        </div>
+      )}
+
+      {/* سطر پیوسته حال‌وهوای روز به صورت برچسب‌های فشرده و مرتب */}
+      <div className="flex items-center justify-between gap-2 pt-2 border-t border-stone-100 text-[11px]">
+        <span className="text-stone-400 shrink-0">حال‌وهوا:</span>
+
+        <div className="flex items-center gap-1 sm:gap-1.5 overflow-x-auto pb-0.5">
+          {MOODS.map((m) => {
+            const isSelected = entry.mood === m.id;
+            return (
+              <button
+                key={m.id}
+                onClick={() => handleSelectMood(m.id)}
+                className={`px-2 py-0.5 rounded-lg border text-[11px] font-medium transition-all flex items-center gap-1 select-none cursor-pointer whitespace-nowrap ${
+                  isSelected
+                    ? `${m.activeColor} shadow-3xs font-bold`
+                    : 'bg-stone-50 text-stone-600 border-stone-200/80 hover:bg-stone-100 hover:text-stone-900'
+                }`}
+              >
+                <span>{m.icon}</span>
+                <span>{m.label}</span>
+              </button>
+            );
+          })}
+        </div>
+      </div>
+    </div>
+  );
+};

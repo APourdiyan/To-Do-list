@@ -1,0 +1,22 @@
+{
+  "id": "/",
+  "name": "دفتر زندگی من",
+  "short_name": "دفتر زندگی",
+  "description": "سامانه برنامه‌ریزی فردی و مدیریت زمان مبتنی بر تقویم هجری شمسی",
+  "start_url": "/",
+  "scope": "/",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#fbfaf6",
+  "theme_color": "#1c1917",
+  "lang": "fa",
+  "dir": "rtl",
+  "icons": [
+    {
+      "src": "/icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any"
+    }
+  ]
+}
