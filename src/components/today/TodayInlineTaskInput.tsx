@@ -54,6 +54,7 @@ export const TodayInlineTaskInput: React.FC = () => {
           onChange={(e) => setTitle(e.target.value)}
           onFocus={() => setIsFocused(true)}
           onBlur={() => setIsFocused(false)}
+          aria-label="عنوان کار جدید برای ثبت سریع"
           placeholder={
             isToday
               ? 'کار جدیدی برای امروز در ذهنت هست؟ بنویس و اینتر بزن...'
@@ -65,7 +66,7 @@ export const TodayInlineTaskInput: React.FC = () => {
         <button
           type="submit"
           disabled={!title.trim()}
-          className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-colors flex items-center gap-1 shrink-0 ${
+          className={`min-h-11 px-4 py-2 rounded-xl text-xs font-bold transition-colors flex items-center gap-1.5 shrink-0 focus:outline-none focus:ring-2 focus:ring-stone-800/70 ${
             title.trim()
               ? 'bg-amber-400 hover:bg-amber-300 text-stone-950 shadow-xs cursor-pointer'
               : 'bg-stone-100 text-stone-400 cursor-not-allowed'
@@ -79,12 +80,12 @@ export const TodayInlineTaskInput: React.FC = () => {
       {(isFocused || title.trim().length > 0) && (
         <div className="pt-2.5 mt-2.5 border-t border-stone-100 flex flex-wrap items-center justify-between gap-2 text-xs">
           {/* انتخاب حوزه */}
-          <div className="flex items-center gap-1.5">
-            <span className="text-[11px] text-stone-400 flex items-center gap-1">
-              <Tag size={11} />
+          <div className="flex items-center gap-1.5 flex-wrap">
+            <span className="text-xs font-bold text-stone-600 flex items-center gap-1">
+              <Tag size={12} aria-hidden="true" />
               <span>حوزه:</span>
             </span>
-            <div className="flex items-center gap-1">
+            <div className="flex items-center gap-1.5 flex-wrap">
               {availableDomains.map((g) => {
                 const isSelected = groupId === g.id;
                 return (
@@ -92,15 +93,17 @@ export const TodayInlineTaskInput: React.FC = () => {
                     key={g.id}
                     type="button"
                     onClick={() => setGroupId(g.id)}
-                    className={`text-[11px] px-2 py-0.5 rounded-md border transition-all flex items-center gap-1 ${
+                    aria-pressed={isSelected}
+                    className={`min-h-9 text-xs px-2.5 py-1 rounded-lg border transition-all flex items-center gap-1.5 cursor-pointer focus:outline-none focus:ring-2 focus:ring-stone-800/70 ${
                       isSelected
                         ? 'bg-stone-900 text-stone-100 border-stone-900 font-bold'
-                        : 'bg-stone-50 text-stone-600 border-stone-200 hover:bg-stone-100'
+                        : 'bg-stone-50 text-stone-700 border-stone-200 hover:bg-stone-100'
                     }`}
                   >
                     <span
-                      className="w-1.5 h-1.5 rounded-full"
+                      className="w-2 h-2 rounded-full"
                       style={{ backgroundColor: g.color }}
+                      aria-hidden="true"
                     />
                     <span>{g.title}</span>
                   </button>
@@ -114,16 +117,18 @@ export const TodayInlineTaskInput: React.FC = () => {
             <button
               type="button"
               onClick={() => setPriority(priority === 'high' ? 'medium' : 'high')}
-              className={`text-[11px] px-2 py-0.5 rounded-md border transition-all flex items-center gap-1 ${
+              aria-pressed={priority === 'high'}
+              className={`min-h-9 text-xs px-3 py-1 rounded-lg border transition-all flex items-center gap-1.5 cursor-pointer focus:outline-none focus:ring-2 focus:ring-stone-800/70 ${
                 priority === 'high'
-                  ? 'bg-rose-50 text-rose-800 border-rose-200 font-bold'
-                  : 'bg-stone-50 text-stone-500 border-stone-200 hover:bg-stone-100'
+                  ? 'bg-rose-50 text-rose-900 border-rose-300 font-bold'
+                  : 'bg-stone-50 text-stone-700 border-stone-200 hover:bg-stone-100'
               }`}
               title="تعیین به عنوان اولویت فوری/مهم"
             >
               <Flame
-                size={12}
+                size={14}
                 className={priority === 'high' ? 'text-rose-600 fill-rose-600' : 'text-stone-400'}
+                aria-hidden="true"
               />
               <span>اولویت مهم امروز</span>
             </button>

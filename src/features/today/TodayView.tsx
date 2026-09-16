@@ -20,6 +20,7 @@ import { TodayFocusBar } from '../../components/today/TodayFocusBar';
 import { TodayInlineTaskInput } from '../../components/today/TodayInlineTaskInput';
 import { TodayJournalPad } from '../../components/today/TodayJournalPad';
 import { TodaySixDomainsView } from '../../components/today/TodaySixDomainsView';
+import { EmptyState } from '../../components/common/EmptyState';
 import {
   Sun,
   Sparkles,
@@ -338,25 +339,20 @@ export const TodayView: React.FC = () => {
             <TodayInlineTaskInput />
 
             {todayTasks.length === 0 ? (
-              <div className="bg-white border border-dashed border-stone-300 rounded-2xl p-8 text-center space-y-3">
-                <div className="w-12 h-12 rounded-full bg-stone-100 text-stone-500 mx-auto flex items-center justify-center">
-                  <Sun size={24} className="text-amber-600" />
-                </div>
-                <div className="text-sm font-bold text-stone-800">
-                  {activeDate === today.dateStr
+              <EmptyState
+                id="empty-today-tasks"
+                icon={Sun}
+                title={
+                  activeDate === today.dateStr
                     ? 'امروز هنوز کاری ثبت نشده است'
-                    : `برای روز ${formatJalaliDate(activeDate)} کاری ثبت نشده است`}
-                </div>
-                <p className="text-xs text-stone-500 max-w-sm mx-auto leading-relaxed">
-                  از کادر بالا مستقیماً یک کار بنویس یا با دکمه زیر یک برنامه جدید ثبت کن.
-                </p>
-                <button
-                  onClick={() => store.setQuickAddModalOpen(true, 'task')}
-                  className="px-3.5 py-1.5 rounded-xl bg-amber-400 hover:bg-amber-300 text-stone-950 text-xs font-bold transition-colors cursor-pointer"
-                >
-                  + افزودن کار برای این روز
-                </button>
-              </div>
+                    : `برای روز ${formatJalaliDate(activeDate)} کاری ثبت نشده است`
+                }
+                description="از کادر بالا مستقیماً یک کار بنویسید یا با دکمه زیر اقدام جدیدی ثبت کنید."
+                action={{
+                  label: 'افزودن کار برای این روز',
+                  onClick: () => store.setQuickAddModalOpen(true, 'task'),
+                }}
+              />
             ) : (
               <div className="space-y-4">
                 

@@ -12,6 +12,7 @@ import {
 } from '../../lib/date/jalali';
 import { PersianDatePicker } from '../../components/common/PersianDatePicker';
 import { CoursePacePlannerModal } from '../../components/goals/CoursePacePlannerModal';
+import { EmptyState } from '../../components/common/EmptyState';
 import {
   Compass,
   Plus,
@@ -484,22 +485,16 @@ export const GoalsView: React.FC = () => {
           </div>
 
           {annualGoals.length === 0 ? (
-            <div className="bg-white border border-dashed border-stone-300 rounded-2xl p-12 text-center space-y-3">
-              <Target size={28} className="text-stone-400 mx-auto" />
-              <div className="text-sm font-bold text-stone-800">
-                هنوز هدف سالانه‌ای برای این سال ثبت نشده است
-              </div>
-              <p className="text-xs text-stone-500 max-w-sm mx-auto">
-                اهداف سالانه قطب‌نمای حرکت شما در طول فصول مختلف هستند.
-              </p>
-              <button
-                onClick={() => handleOpenCreate(undefined, 'annual')}
-                className="inline-flex items-center gap-1.5 px-3.5 py-2 text-xs font-bold text-stone-950 bg-amber-400 hover:bg-amber-300 rounded-xl shadow-xs transition-colors cursor-pointer"
-              >
-                <Plus size={14} className="stroke-[2.5]" />
-                <span>تعریف اولین هدف سالانه</span>
-              </button>
-            </div>
+            <EmptyState
+              id="empty-annual-goals"
+              icon={Target}
+              title="هنوز هدف سالانه‌ای برای این سال ثبت نشده است"
+              description="اهداف سالانه قطب‌نمای حرکت شما در طول فصول مختلف هستند."
+              action={{
+                label: 'تعریف اولین هدف سالانه',
+                onClick: () => handleOpenCreate(undefined, 'annual'),
+              }}
+            />
           ) : (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
               {annualGoals.map((goal) => renderGoalCard(goal))}
@@ -652,18 +647,16 @@ export const GoalsView: React.FC = () => {
                       </div>
 
                       {goalCount === 0 ? (
-                        <div className="bg-white border border-dashed border-stone-200 rounded-xl p-8 text-center space-y-2">
-                          <p className="text-xs text-stone-500">
-                            هنوز هدفی برای ماه {mGroup.monthName} ثبت نشده است.
-                          </p>
-                          <button
-                            onClick={() => handleOpenCreate(mGroup.monthNumber, 'seasonal')}
-                            className="text-xs font-bold text-stone-900 bg-amber-100 hover:bg-amber-200 px-3 py-1.5 rounded-lg transition-colors cursor-pointer inline-flex items-center gap-1"
-                          >
-                            <Plus size={12} />
-                            <span>ثبت اولین هدف {mGroup.monthName}</span>
-                          </button>
-                        </div>
+                        <EmptyState
+                          id={`empty-month-goals-${mGroup.monthNumber}`}
+                          icon={Target}
+                          title={`هنوز هدفی برای ماه ${mGroup.monthName} ثبت نشده است`}
+                          description="می‌توانید برای این ماه هدف جدیدی تعیین کرده و آن را به اقدامات خرد تبدیل کنید."
+                          action={{
+                            label: `ثبت اولین هدف ${mGroup.monthName}`,
+                            onClick: () => handleOpenCreate(mGroup.monthNumber, 'seasonal'),
+                          }}
+                        />
                       ) : (
                         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3.5">
                           {mGroup.goals.map((goal) => renderGoalCard(goal))}

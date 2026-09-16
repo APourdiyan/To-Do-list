@@ -14,6 +14,8 @@ import { DailyAccountingModal } from './components/accounting/DailyAccountingMod
 import { ManageDomainsModal } from './components/domains/ManageDomainsModal';
 import { UserProfileModal } from './components/profile/UserProfileModal';
 import { AlarmBannerToast } from './components/common/AlarmBannerToast';
+import { UndoToast } from './components/common/UndoToast';
+import { StorageWarningBanner } from './components/common/StorageWarningBanner';
 import { useAlarmWatcher } from './lib/alarm/useAlarmWatcher';
 
 export default function App() {
@@ -112,6 +114,12 @@ export default function App() {
     >
       {/* اعلان زنگ آلارم زنده */}
       <AlarmBannerToast alert={activeAlert} onDismiss={dismissAlert} />
+
+      {/* بنر هشدار خطای ذخیره‌سازی محلی */}
+      <StorageWarningBanner />
+
+      {/* اعلان لغو و بازگردانی مشترک (Undo Toast برای Task / Subtask / Goal / Plan) */}
+      <UndoToast />
 
       {/* سربرگ (فقط در دسکتاپ md:block و در موبایل/اندروید طبق درخواست کاملاً حذف شده است) */}
       <Header />

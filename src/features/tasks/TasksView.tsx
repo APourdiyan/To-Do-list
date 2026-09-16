@@ -3,6 +3,8 @@ import { useStore, store } from '../../store/useStore';
 import { Priority, Task } from '../../types';
 import { TaskItem } from '../../components/tasks/TaskItem';
 import { CourseTaskSeriesCard } from '../../components/tasks/CourseTaskSeriesCard';
+import { InlineTaskCreator } from '../../components/tasks/InlineTaskCreator';
+import { EmptyState } from '../../components/common/EmptyState';
 import { SIX_LIFE_DOMAINS } from '../../data/sixDomains';
 import {
   getTodayJalali,
@@ -176,7 +178,7 @@ export const TasksView: React.FC = () => {
   const renderTaskBucketList = (taskList: Task[], contextLabel?: string) => {
     const { regularTasks, courseGroups } = groupCourseTasks(taskList);
     return (
-      <div className="space-y-2">
+      <div role="list" aria-label="فهرست کارها" className="space-y-2">
         {courseGroups.map((group) => {
           const goal = goals.find((g) => g.id === group.goalId);
           return (
@@ -234,7 +236,10 @@ export const TasksView: React.FC = () => {
         </button>
       </div>
 
-      {/* ۲. نوار وضوح ذهنی و راهنمای تفکیک کارها از عادات */}
+      {/* ۲. نوار ثبت سریع وظیفه (بدون نیاز به پاپ‌آپ) */}
+      <InlineTaskCreator />
+
+      {/* ۳. نوار وضوح ذهنی و راهنمای تفکیک کارها از عادات */}
       <div className="bg-[#fdfcf9] border border-stone-200/80 rounded-2xl p-3 flex flex-col sm:flex-row sm:items-center justify-between gap-2.5 text-xs text-stone-600">
         <div className="flex items-center gap-3">
           <div className="flex items-center gap-1.5 font-bold text-stone-900">
@@ -243,7 +248,7 @@ export const TasksView: React.FC = () => {
             <span className="font-mono text-stone-900">{toPersianDigits(completionRate)}٪</span>
           </div>
           <span className="text-stone-300">|</span>
-          <span className="text-stone-500 text-[11px]">
+          <span className="text-stone-500 text-[11px]" aria-live="polite">
             {toPersianDigits(completedTasks.length)} انجام‌شده / {toPersianDigits(totalTasks)} کل ثبت‌شده
           </span>
         </div>
@@ -260,7 +265,7 @@ export const TasksView: React.FC = () => {
         </div>
       </div>
 
-      {/* ۳. فیلترهای زمانی و اولویتی */}
+      {/* ۴. فیلترهای زمانی و اولویتی */}
       <div className="space-y-2.5">
         <div className="flex items-center justify-between gap-2 flex-wrap">
           {/* فیلترهای حالت نمایش */}
@@ -277,7 +282,7 @@ export const TasksView: React.FC = () => {
               <button
                 key={f.id}
                 onClick={() => setActiveFilter(f.id as TaskFilterType)}
-                className={`text-xs px-2.5 py-1.5 rounded-xl font-bold transition-all whitespace-nowrap border flex items-center gap-1 cursor-pointer ${
+                className={`text-xs px-2.5 py-1.5 rounded-xl font-bold transition-all whitespace-nowrap border flex items-center gap-1 cursor-pointer focus-visible:ring-2 focus-visible:ring-amber-400 focus-visible:outline-hidden ${
                   activeFilter === f.id
                     ? 'bg-stone-900 text-stone-100 border-stone-900 shadow-xs'
                     : f.alert && f.badge && f.badge > 0
@@ -307,6 +312,7 @@ export const TasksView: React.FC = () => {
           <input
             type="text"
             placeholder="جستجو در کارها..."
+            aria-label="جستجو در لیست کارها"
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
             className="bg-white border border-stone-200 rounded-xl px-2.5 py-1 text-xs text-stone-800 placeholder:text-stone-400 focus:outline-hidden focus:border-amber-400 w-full sm:w-44"
@@ -347,26 +353,36 @@ export const TasksView: React.FC = () => {
         </div>
       </div>
 
-      {/* ۴. نمایش وظایف بر اساس دسته‌بندی زمانی یا فیلتر انتخابی */}
+      {/* ۵. نمایش وظایف بر اساس دسته‌بندی زمانی یا فیلتر انتخابی */}
       {filteredTasks.length === 0 ? (
-        <div className="bg-white border border-dashed border-stone-300 rounded-2xl p-10 text-center space-y-3">
-          <div className="w-12 h-12 rounded-full bg-stone-100 text-stone-500 mx-auto flex items-center justify-center">
-            <CheckSquare size={24} />
-          </div>
-          <div className="text-sm font-bold text-stone-800">
-            {searchQuery ? 'کاری منطبق بر جستجوی شما یافت نشد' : 'در این بخش کاری وجود ندارد'}
-          </div>
-          <p className="text-xs text-stone-500 max-w-sm mx-auto">
-            کاری در این بخش ثبت نشده است.
-          </p>
-          <button
-            onClick={() => store.setQuickAddModalOpen(true, 'task')}
-            className="inline-flex items-center gap-1.5 px-3.5 py-1.5 text-xs font-bold text-stone-950 bg-amber-400 hover:bg-amber-300 rounded-xl shadow-xs transition-colors cursor-pointer"
-          >
-            <Plus size={14} className="stroke-[2.5]" />
-            <span>افزودن کار جدید</span>
-          </button>
-        </div>
+        <EmptyState
+          id="empty-tasks-view"
+          icon={CheckSquare}
+          title={
+            searchQuery
+              ? 'کاری با این عنوان پیدا نشد'
+              : activeFilter === 'completed'
+              ? 'هنوز کاری تکمیل نشده است'
+              : activeFilter === 'overdue'
+              ? 'هیچ کار معوقه‌ای نداری! همه کارها در زمان مناسب هستند'
+              : activeFilter === 'today'
+              ? 'برای امروز کاری در انتظار نیست'
+              : activeFilter === 'high_priority'
+              ? 'کار فوری و با اولویت بالا نداری'
+              : 'در این بخش کاری وجود ندارد'
+          }
+          description={
+            activeFilter === 'completed'
+              ? 'با تیک زدن اولین کار در لیست، احساس پیشرفت را تجربه کنید.'
+              : activeFilter === 'today'
+              ? 'می‌توانید از فرم ثبت سریع بالا کار جدیدی برای امروز اضافه کنید.'
+              : 'لیست شما منظم و آرام است.'
+          }
+          action={{
+            label: 'افزودن کار جدید',
+            onClick: () => store.setQuickAddModalOpen(true, 'task'),
+          }}
+        />
       ) : activeFilter === 'smart' ? (
         /* نمای هوشمند با سطل‌های زمانی منظم (Smart Buckets) */
         <div className="space-y-6">

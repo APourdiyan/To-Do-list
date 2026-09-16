@@ -67,24 +67,27 @@ export const TodayJournalPad: React.FC = () => {
             </span>
           )}
           <button
+            type="button"
             onClick={handleManualSave}
-            className="text-xs text-stone-600 hover:text-stone-900 bg-stone-50 hover:bg-stone-100 border border-stone-200 px-2.5 py-1 rounded-lg flex items-center gap-1 transition-colors"
+            className="min-h-11 px-3.5 py-2 text-xs font-bold text-stone-700 hover:text-stone-900 bg-stone-100 hover:bg-stone-200 border border-stone-300 rounded-xl flex items-center gap-1.5 transition-colors cursor-pointer focus:outline-none focus:ring-2 focus:ring-stone-800/70"
             title="ذخیره یادداشت"
+            aria-label="ذخیره دستی یادداشت"
           >
-            <Save size={13} />
+            <Save size={14} aria-hidden="true" />
             <span>ذخیره</span>
           </button>
         </div>
       </div>
 
       {/* بافت کاغذ خط‌دار یادداشت (Ruled Paper Texture Effect) */}
-      <div className="relative rounded-xl border border-stone-200 bg-[#fefdfb] p-1 overflow-hidden">
+      <div className="relative rounded-xl border border-stone-200 bg-[#fefdfb] p-1 overflow-hidden focus-within:ring-2 focus-within:ring-stone-800/70 focus-within:border-stone-400">
         <textarea
           value={text}
           onChange={handleChange}
           rows={4}
+          aria-label="متن یادداشت روزانه"
           placeholder="نکات، آموخته‌ها، خلاصه جلسات یا یادداشت‌های امروز را اینجا بنویسید..."
-          className="w-full bg-transparent p-3 text-xs sm:text-sm leading-relaxed text-stone-800 placeholder:text-stone-400 focus:outline-hidden resize-y min-h-[100px]"
+          className="w-full bg-transparent p-3 text-xs sm:text-sm leading-relaxed text-stone-900 placeholder:text-stone-500 focus:outline-none resize-y min-h-[100px]"
           style={{
             backgroundImage:
               'linear-gradient(transparent, transparent 27px, #f0ede6 28px)',

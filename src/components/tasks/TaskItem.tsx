@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Task, DomainGroup } from '../../types';
+import { Task } from '../../types';
 import { store, useStore } from '../../store/useStore';
 import {
   formatJalaliDate,
@@ -19,9 +19,9 @@ import {
   Compass,
   FileText,
   Flame,
-  Bell,
   BellRing,
   BellOff,
+  Pencil,
 } from 'lucide-react';
 import { SIX_LIFE_DOMAINS } from '../../data/sixDomains';
 
@@ -31,11 +31,17 @@ interface TaskItemProps {
   compact?: boolean;
 }
 
-export const TaskItem: React.FC<TaskItemProps> = ({ task, onEdit, compact = false }) => {
-  const { domainGroups, goals, plans } = useStore();
+export const TaskItem: React.FC<TaskItemProps> = React.memo(({ task, compact = false }) => {
+  const domainGroups = useStore((s) => s.domainGroups);
+  const goals = useStore((s) => s.goals);
+  const plans = useStore((s) => s.plans);
+
   const [expanded, setExpanded] = useState(false);
   const [newSubTaskText, setNewSubTaskText] = useState('');
   const [rescheduleMenuOpen, setRescheduleMenuOpen] = useState(false);
+  const [isEditingTitle, setIsEditingTitle] = useState(false);
+  const [editedTitle, setEditedTitle] = useState(task.title);
+  const [showGoalTooltip, setShowGoalTooltip] = useState(false);
 
   const group =
     domainGroups.find((g) => g.id === task.groupId) ||
@@ -55,6 +61,26 @@ export const TaskItem: React.FC<TaskItemProps> = ({ task, onEdit, compact = fals
     setRescheduleMenuOpen(false);
   };
 
+  const handleSaveTitle = () => {
+    const trimmed = editedTitle.trim();
+    if (trimmed && trimmed !== task.title) {
+      store.updateTask(task.id, { title: trimmed });
+    } else {
+      setEditedTitle(task.title);
+    }
+    setIsEditingTitle(false);
+  };
+
+  const handleTitleKeyDown = (e: React.KeyboardEvent) => {
+    if (e.key === 'Enter') {
+      e.preventDefault();
+      handleSaveTitle();
+    } else if (e.key === 'Escape') {
+      setEditedTitle(task.title);
+      setIsEditingTitle(false);
+    }
+  };
+
   const handleAddSubTask = (e: React.FormEvent) => {
     e.preventDefault();
     if (!newSubTaskText.trim()) return;
@@ -66,63 +92,147 @@ export const TaskItem: React.FC<TaskItemProps> = ({ task, onEdit, compact = fals
   const totalSubtasksCount = task.subtasks?.length || 0;
 
   return (
-    <div
-      className={`group rounded-xl border transition-all duration-150 ${
+    <article
+      id={`task-item-${task.id}`}
+      role="listitem"
+      className={`group rounded-2xl border transition-all duration-150 ${
         isCompleted
-          ? 'bg-stone-50/70 border-stone-200/60 opacity-80'
+          ? 'bg-stone-50/75 border-stone-200/70 opacity-85'
           : 'bg-white border-stone-200/90 hover:border-stone-300 shadow-2xs hover:shadow-xs'
       } overflow-hidden`}
       dir="rtl"
     >
-      {/* ردیف اصلی وظیفه به صورت دو طبقه منظم و خوش‌خوان */}
+      {/* ردیف اصلی وظیفه */}
       <div
-        onClick={() => setExpanded(!expanded)}
-        className="p-3 sm:px-3.5 sm:py-2.5 cursor-pointer select-none space-y-1.5"
+        onClick={() => {
+          if (!isEditingTitle) {
+            setExpanded(!expanded);
+          }
+        }}
+        className="p-3 sm:px-4 sm:py-3 cursor-pointer select-none space-y-1.5 focus:outline-none focus:ring-2 focus:ring-stone-800/70 focus:ring-offset-1 focus:ring-offset-white rounded-2xl"
+        tabIndex={0}
+        onKeyDown={(e) => {
+          if (e.key === 'Enter' || e.key === ' ') {
+            if (!isEditingTitle && e.target === e.currentTarget) {
+              e.preventDefault();
+              setExpanded(!expanded);
+            }
+          }
+        }}
       >
-        {/* طبقه بالا: چک‌باکس + عنوان برجسته و جادار + دکمه‌های کنترلی سریع */}
-        <div className="flex items-start justify-between gap-3">
-          {/* عنوان وظیفه با فونت خوانا و فضای کافی برای متون طولانی */}
-          <div className="flex items-start gap-2.5 flex-1 min-w-0">
+        {/* طبقه بالا: چک‌باکس با تاچ‌تارگت ارگونومیک (۴۴×۴۴) + عنوان + دکمه‌های کنترلی */}
+        <div className="flex items-start justify-between gap-2.5">
+          <div className="flex items-start gap-2 flex-1 min-w-0">
+            {/* دکمه چک‌باکس با تاچ‌تارگت ارگونومیک (حداقل ۴۴×۴۴ پیکسل) */}
             <button
+              id={`task-checkbox-${task.id}`}
               type="button"
-              onClick={handleToggle}
-              className={`w-5.5 h-5.5 mt-0.5 rounded-lg shrink-0 flex items-center justify-center border transition-all duration-150 active:scale-90 cursor-pointer ${
+              role="checkbox"
+              aria-checked={isCompleted}
+              aria-label={
                 isCompleted
-                  ? 'bg-emerald-700 border-emerald-700 text-white shadow-xs scale-100'
-                  : 'border-stone-300 hover:border-emerald-600 hover:bg-emerald-50/50 bg-stone-50'
-              }`}
-              title={isCompleted ? 'علامت‌گذاری به عنوان انجام‌نشده' : 'علامت‌گذاری به عنوان انجام‌شده'}
+                  ? `تغییر وضعیت «${task.title}» به انجام‌نشده`
+                  : `تکمیل کار: «${task.title}»`
+              }
+              onClick={handleToggle}
+              className="min-w-11 min-h-11 -m-1.5 flex items-center justify-center rounded-xl shrink-0 transition-all duration-150 active:scale-90 cursor-pointer focus:outline-none focus:ring-2 focus:ring-stone-800/70 focus:ring-offset-1 focus:ring-offset-white"
             >
-              {isCompleted && <Check size={13} className="stroke-[3] animate-in zoom-in-50 duration-150" />}
-            </button>
-
-            <div className="flex-1 min-w-0">
               <span
-                className={`text-sm sm:text-[14px] font-semibold leading-relaxed block break-words transition-colors ${
+                className={`w-6 h-6 rounded-lg flex items-center justify-center border transition-all ${
                   isCompleted
-                    ? 'line-through text-stone-400 font-normal'
-                    : 'text-stone-900 group-hover:text-black'
+                    ? 'bg-emerald-700 border-emerald-700 text-white shadow-xs scale-100'
+                    : 'border-stone-300 hover:border-emerald-600 hover:bg-emerald-50/60 bg-stone-50'
                 }`}
               >
-                {task.title}
+                {isCompleted && (
+                  <Check
+                    size={14}
+                    className="stroke-[3] animate-in zoom-in-50 duration-150"
+                    aria-hidden="true"
+                  />
+                )}
               </span>
+            </button>
+
+            <div className="flex-1 min-w-0 pt-0.5">
+              {isEditingTitle ? (
+                <div
+                  className="flex items-center gap-1.5"
+                  onClick={(e) => e.stopPropagation()}
+                >
+                  <label htmlFor={`edit-task-input-${task.id}`} className="sr-only">
+                    ویرایش عنوان وظیفه
+                  </label>
+                  <input
+                    id={`edit-task-input-${task.id}`}
+                    type="text"
+                    value={editedTitle}
+                    autoFocus
+                    maxLength={200}
+                    onChange={(e) => setEditedTitle(e.target.value)}
+                    onBlur={handleSaveTitle}
+                    onKeyDown={handleTitleKeyDown}
+                    className="w-full px-2.5 py-1 text-sm bg-white border-2 border-stone-800 rounded-lg text-stone-900 focus:outline-none focus:ring-2 focus:ring-stone-800/70 shadow-2xs font-semibold"
+                  />
+                  <button
+                    type="button"
+                    onClick={handleSaveTitle}
+                    className="min-h-11 min-w-11 px-3 bg-stone-900 hover:bg-black text-white rounded-lg text-xs font-bold shrink-0 transition-colors flex items-center justify-center focus:outline-none focus:ring-2 focus:ring-stone-800/70"
+                    aria-label="ذخیره عنوان جدید"
+                  >
+                    ذخیره
+                  </button>
+                </div>
+              ) : (
+                <span
+                  onDoubleClick={(e) => {
+                    e.stopPropagation();
+                    setIsEditingTitle(true);
+                  }}
+                  title="برای ویرایش سریع عنوان دوبار کلیک کنید"
+                  className={`text-sm sm:text-[14px] font-semibold leading-relaxed block break-words transition-colors select-text ${
+                    isCompleted
+                      ? 'line-through text-stone-400 font-normal'
+                      : 'text-stone-900 group-hover:text-black'
+                  }`}
+                >
+                  {task.title}
+                </span>
+              )}
             </div>
           </div>
 
-          {/* اکشن‌های سمت چپ: بازشو و حذف */}
+          {/* اکشن‌های سمت چپ: ویرایش، انتقال تاریخ، حذف و آکاردئون با پدینگ لمسی ۴۴×۴۴ */}
           <div
-            className="flex items-center gap-1 shrink-0 text-stone-400"
+            className="flex items-center gap-0.5 shrink-0 text-stone-500"
             onClick={(e) => e.stopPropagation()}
           >
+            {/* دکمه ویرایش عنوان */}
+            <button
+              id={`task-edit-btn-${task.id}`}
+              type="button"
+              onClick={() => {
+                setEditedTitle(task.title);
+                setIsEditingTitle(!isEditingTitle);
+              }}
+              className="min-w-11 min-h-11 flex items-center justify-center rounded-xl text-stone-500 hover:text-stone-900 hover:bg-stone-100 transition-colors focus:outline-none focus:ring-2 focus:ring-stone-800/70 focus:ring-offset-1 focus:ring-offset-white"
+              aria-label={`ویرایش عنوان کار: ${task.title}`}
+              title="ویرایش عنوان"
+            >
+              <Pencil size={15} aria-hidden="true" />
+            </button>
+
             {/* منوی انتقال تاریخ */}
             <div className="relative">
               <button
+                id={`task-reschedule-btn-${task.id}`}
                 type="button"
                 onClick={() => setRescheduleMenuOpen(!rescheduleMenuOpen)}
-                className="p-1.5 rounded-md text-stone-400 hover:text-stone-800 hover:bg-stone-100 transition-colors"
+                className="min-w-11 min-h-11 flex items-center justify-center rounded-xl text-stone-500 hover:text-stone-900 hover:bg-stone-100 transition-colors focus:outline-none focus:ring-2 focus:ring-stone-800/70 focus:ring-offset-1 focus:ring-offset-white"
+                aria-label={`تغییر تاریخ موعد کار: ${task.title}`}
                 title="تغییر تاریخ موعد"
               >
-                <CalendarDays size={13} />
+                <CalendarDays size={15} aria-hidden="true" />
               </button>
 
               {rescheduleMenuOpen && (
@@ -131,25 +241,25 @@ export const TaskItem: React.FC<TaskItemProps> = ({ task, onEdit, compact = fals
                     className="fixed inset-0 z-30"
                     onClick={() => setRescheduleMenuOpen(false)}
                   />
-                  <div className="absolute left-0 mt-1 w-32 bg-white rounded-xl shadow-lg border border-stone-200 py-1 z-40 text-right text-xs">
+                  <div className="absolute left-0 mt-1 w-36 bg-white rounded-2xl shadow-xl border border-stone-200 py-1.5 z-40 text-right text-xs">
                     <button
                       type="button"
                       onClick={() => handleReschedule(today)}
-                      className="w-full text-right px-3 py-1.5 hover:bg-stone-50 text-stone-700 font-medium"
+                      className="w-full text-right px-3.5 py-2.5 hover:bg-stone-50 text-stone-800 font-medium focus:outline-none focus:bg-stone-100"
                     >
                       امروز
                     </button>
                     <button
                       type="button"
                       onClick={() => handleReschedule(addDaysJalali(today, 1))}
-                      className="w-full text-right px-3 py-1.5 hover:bg-stone-50 text-stone-700 font-medium"
+                      className="w-full text-right px-3.5 py-2.5 hover:bg-stone-50 text-stone-800 font-medium focus:outline-none focus:bg-stone-100"
                     >
                       فردا
                     </button>
                     <button
                       type="button"
                       onClick={() => handleReschedule(addDaysJalali(today, 7))}
-                      className="w-full text-right px-3 py-1.5 hover:bg-stone-50 text-stone-700 font-medium"
+                      className="w-full text-right px-3.5 py-2.5 hover:bg-stone-50 text-stone-800 font-medium focus:outline-none focus:bg-stone-100"
                     >
                       هفته آینده
                     </button>
@@ -158,42 +268,77 @@ export const TaskItem: React.FC<TaskItemProps> = ({ task, onEdit, compact = fals
               )}
             </div>
 
-            {/* حذف */}
+            {/* دکمه حذف با تاچ‌تارگت ارگونومیک و پشتیبانی از Undo */}
             <button
+              id={`task-delete-btn-${task.id}`}
               type="button"
               onClick={() => store.deleteTask(task.id)}
-              className="p-1.5 text-stone-300 hover:text-rose-600 hover:bg-rose-50 rounded-md transition-colors"
-              title="حذف کار"
+              className="min-w-11 min-h-11 flex items-center justify-center text-stone-500 hover:text-rose-600 hover:bg-rose-50 rounded-xl transition-colors focus:outline-none focus:ring-2 focus:ring-rose-600 focus:ring-offset-1 focus:ring-offset-white"
+              aria-label={`حذف کار: ${task.title}`}
+              title="حذف کار (با امکان بازگردانی ۵ ثانیه‌ای)"
             >
-              <Trash2 size={13} />
+              <Trash2 size={15} aria-hidden="true" />
             </button>
 
-            {/* نشانگر باز/بسته */}
+            {/* نشانگر باز/بسته کردن آکاردئون */}
             <button
+              id={`task-expand-btn-${task.id}`}
               type="button"
               onClick={() => setExpanded(!expanded)}
-              className="p-1 text-stone-400 hover:text-stone-700 rounded-md transition-colors"
+              className="min-w-11 min-h-11 flex items-center justify-center text-stone-500 hover:text-stone-800 rounded-xl transition-colors focus:outline-none focus:ring-2 focus:ring-stone-800/70 focus:ring-offset-1 focus:ring-offset-white"
+              aria-label={
+                expanded
+                  ? `بستن جزئیات کار: ${task.title}`
+                  : `مشاهده جزئیات کامل کار: ${task.title}`
+              }
+              aria-expanded={expanded}
+              title="نمایش یا پنهان‌سازی جزئیات"
             >
-              {expanded ? <ChevronUp size={14} /> : <ChevronDown size={14} />}
+              {expanded ? (
+                <ChevronUp size={16} aria-hidden="true" />
+              ) : (
+                <ChevronDown size={16} aria-hidden="true" />
+              )}
             </button>
           </div>
         </div>
 
-        {/* طبقه پایین: مابقی جزئیات (برچسب حوزه، اولویت، تاریخ، ساعت، تعداد زیروظایف و پیش‌نمایش توضیح) */}
-        <div className="flex flex-wrap items-center justify-between gap-2 pr-7 pt-0.5 text-xs text-stone-500">
+        {/* طبقه پایین متادیتا — الگوی Progressive Disclosure:
+            در موبایل به طور پیش‌فرض فقط ۲ نشان اصلی (اولویت مهم + تاریخ سررسید) دیده می‌شوند تا شلوغی بصری کاهش یابد.
+            سایر نشان‌ها در دسکتاپ (md:) همیشه یا در موبایل پس از باز شدن (expanded) در دسترس‌اند. */}
+        <div className="flex flex-wrap items-center justify-between gap-2 pr-8 pt-0.5 text-xs text-stone-600">
           <div className="flex flex-wrap items-center gap-1.5 sm:gap-2">
-            {/* نشان اولویت مهم */}
+            {/* ۱. نشان اولویت مهم (نشان اصلی - همیشه مرئی) */}
             {task.priority === 'high' && !isCompleted && (
               <span className="shrink-0 flex items-center gap-1 text-[10px] font-bold px-2 py-0.5 rounded-md bg-rose-50 text-rose-700 border border-rose-200">
-                <Flame size={10} className="fill-rose-600 text-rose-600" />
+                <Flame size={11} className="fill-rose-600 text-rose-600" aria-hidden="true" />
                 <span>اولویت مهم</span>
               </span>
             )}
 
-            {/* برچسب حوزه/دسته */}
+            {/* ۲. تاریخ موعد (نشان اصلی - همیشه مرئی) */}
+            <span className="flex items-center gap-1 text-[10px] font-mono text-stone-600 font-medium">
+              <Calendar size={11} className="text-stone-500" aria-hidden="true" />
+              <span>
+                {task.dueDate === today
+                  ? 'امروز'
+                  : formatJalaliDate(task.dueDate, { showYear: false })}
+              </span>
+            </span>
+
+            {/* نشان‌های ثانویه: در دسکتاپ (md:) در حالت بسته دیده می‌شوند، در موبایل پنهان تا از شلوغی پرهیز شود */}
+            {/* ۳. ساعت موعد */}
+            {task.dueTime && (
+              <span className="hidden md:flex items-center gap-0.5 text-[10px] font-mono text-amber-950 bg-amber-50 px-1.5 py-0.5 rounded border border-amber-200">
+                <Clock size={11} aria-hidden="true" />
+                <span>{task.dueTime}</span>
+              </span>
+            )}
+
+            {/* ۴. برچسب حوزه/دسته */}
             {group && (
               <span
-                className="px-2 py-0.5 rounded text-[10px] font-medium border"
+                className="hidden md:inline-flex px-2 py-0.5 rounded text-[10px] font-medium border"
                 style={{
                   backgroundColor: `${group.color}12`,
                   borderColor: `${group.color}35`,
@@ -204,69 +349,109 @@ export const TaskItem: React.FC<TaskItemProps> = ({ task, onEdit, compact = fals
               </span>
             )}
 
-            {/* تاریخ موعد */}
-            <span className="flex items-center gap-1 text-[10px] font-mono text-stone-400">
-              <Calendar size={10} />
-              <span>
-                {task.dueDate === today
-                  ? 'امروز'
-                  : formatJalaliDate(task.dueDate, { showYear: false })}
-              </span>
-            </span>
-
-            {/* ساعت موعد */}
-            {task.dueTime && (
-              <span className="flex items-center gap-0.5 text-[10px] font-mono text-amber-900 bg-amber-50 px-1.5 py-0.5 rounded border border-amber-200">
-                <Clock size={10} />
-                <span>{task.dueTime}</span>
-              </span>
-            )}
-
-            {/* نشان آلارم فعال */}
+            {/* ۵. نشان آلارم فعال */}
             {task.hasAlarm && (
-              <span className="flex items-center gap-1 text-[10px] font-mono text-amber-950 bg-amber-100/90 px-1.5 py-0.5 rounded-md border border-amber-300 shadow-2xs">
-                <BellRing size={10} className="text-amber-700 animate-pulse" />
-                <span>آلارم {task.alarmMinutesBefore ? `(${toPersianDigits(task.alarmMinutesBefore)}د قبل)` : 'فعال'}</span>
+              <span className="hidden md:flex items-center gap-1 text-[10px] font-mono text-amber-950 bg-amber-100/90 px-1.5 py-0.5 rounded-md border border-amber-300 shadow-2xs">
+                <BellRing size={11} className="text-amber-700 animate-pulse" aria-hidden="true" />
+                <span>
+                  آلارم {task.alarmMinutesBefore ? `(${toPersianDigits(task.alarmMinutesBefore)}د قبل)` : 'فعال'}
+                </span>
               </span>
             )}
 
-            {/* تعداد زیروظایف */}
+            {/* ۶. تعداد زیروظایف */}
             {totalSubtasksCount > 0 && (
-              <span className="text-[10px] font-bold text-stone-600 bg-stone-100 px-1.5 py-0.5 rounded border border-stone-200">
+              <span className="hidden md:inline-flex text-[10px] font-bold text-stone-600 bg-stone-100 px-1.5 py-0.5 rounded border border-stone-200">
                 {toPersianDigits(completedSubtasksCount)} از {toPersianDigits(totalSubtasksCount)} گام
               </span>
             )}
 
-            {/* نشان وجود یادداشت */}
+            {/* ۷. نشان وجود یادداشت */}
             {task.notes && !expanded && (
               <span
-                className="text-[10px] text-stone-400 flex items-center gap-0.5 bg-stone-100/90 px-1.5 py-0.5 rounded border border-stone-200/60"
+                className="hidden md:flex text-[10px] text-stone-500 items-center gap-0.5 bg-stone-100/90 px-1.5 py-0.5 rounded border border-stone-200/60"
                 title="دارای یادداشت"
               >
-                <FileText size={10} />
+                <FileText size={11} aria-hidden="true" />
                 <span>یادداشت</span>
               </span>
             )}
           </div>
 
-          {/* نشان هدف متصل شده در طبقه پایین */}
+          {/* نشان هدف متصل: در دسکتاپ با متن کامل؛ در موبایل با آیکون قطب‌نما و تولتیپ تپ */}
           {goal && (
-            <span className="hidden sm:flex items-center gap-1 text-[10px] text-stone-400 truncate max-w-[150px]">
-              <Compass size={10} className="text-amber-700 shrink-0" />
-              <span className="truncate">{goal.title}</span>
-            </span>
+            <div className="relative flex items-center">
+              {/* در موبایل: آیکون هدف با دکمه و تاچ‌تارگت برای نمایش نام هدف */}
+              <button
+                type="button"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  setShowGoalTooltip(!showGoalTooltip);
+                }}
+                className="md:hidden flex items-center gap-1 text-[10px] text-stone-600 bg-amber-50/80 px-1.5 py-0.5 rounded border border-amber-200/80"
+                aria-label={`هدف متصل: ${goal.title}`}
+              >
+                <Compass size={11} className="text-amber-700 shrink-0" aria-hidden="true" />
+                <span className="font-medium text-amber-900">مسیر</span>
+              </button>
+
+              {showGoalTooltip && (
+                <div
+                  className="md:hidden absolute bottom-full left-0 mb-1 z-30 px-2.5 py-1.5 bg-stone-900 text-stone-100 text-[11px] rounded-xl shadow-xl whitespace-nowrap"
+                  onClick={(e) => e.stopPropagation()}
+                >
+                  <span className="text-amber-300 font-bold block text-[10px]">هدف متصل:</span>
+                  <span>{goal.title}</span>
+                </div>
+              )}
+
+              {/* در دسکتاپ: نمایش متنی شفاف */}
+              <span className="hidden md:flex items-center gap-1 text-[10px] text-stone-500 truncate max-w-[170px]">
+                <Compass size={11} className="text-amber-700 shrink-0" aria-hidden="true" />
+                <span className="truncate">{goal.title}</span>
+              </span>
+            </div>
           )}
         </div>
       </div>
 
-      {/* بخش گسترش‌پذیر در صورت کلیک: توضیحات تفصیلی، زیروظایف و فرم افزودن گام */}
+      {/* بخش آکاردئون گسترش‌یافته در صورت کلیک */}
       {expanded && (
-        <div className="px-4 py-3 bg-stone-50/90 border-t border-stone-100 space-y-3 text-xs animate-in fade-in duration-150">
+        <div className="px-4 py-3 bg-stone-50/90 border-t border-stone-200/80 space-y-3 text-xs animate-in fade-in duration-150">
+          {/* ردیف متادیتاهای تکمیلی در حالت باز (مخصوصاً برای موبایل که در حالت بسته پنهان بودند) */}
+          <div className="flex flex-wrap items-center gap-2 pb-1 border-b border-stone-200/60">
+            {group && (
+              <span
+                className="px-2 py-0.5 rounded text-[10px] font-medium border"
+                style={{
+                  backgroundColor: `${group.color}15`,
+                  borderColor: `${group.color}40`,
+                  color: group.color,
+                }}
+              >
+                حوزه: {group.title}
+              </span>
+            )}
+
+            {task.dueTime && (
+              <span className="flex items-center gap-1 text-[10px] font-mono text-stone-700 bg-white px-2 py-0.5 rounded border border-stone-200">
+                <Clock size={11} className="text-stone-500" aria-hidden="true" />
+                <span>ساعت: {task.dueTime}</span>
+              </span>
+            )}
+
+            {totalSubtasksCount > 0 && (
+              <span className="text-[10px] font-bold text-stone-700 bg-white px-2 py-0.5 rounded border border-stone-200">
+                پیشرفت گام‌ها: {toPersianDigits(completedSubtasksCount)} از {toPersianDigits(totalSubtasksCount)}
+              </span>
+            )}
+          </div>
+
           {/* توضیحات کامل */}
           {task.notes && (
             <div className="space-y-1">
-              <span className="text-[11px] font-bold text-stone-500">یادداشت و جزئیات:</span>
-              <p className="text-stone-700 leading-relaxed bg-white p-2.5 rounded-xl border border-stone-200/80 text-xs">
+              <span className="text-[11px] font-bold text-stone-600 block">یادداشت و جزئیات:</span>
+              <p className="text-stone-800 leading-relaxed bg-white p-2.5 rounded-xl border border-stone-200/80 text-xs">
                 {task.notes}
               </p>
             </div>
@@ -274,8 +459,8 @@ export const TaskItem: React.FC<TaskItemProps> = ({ task, onEdit, compact = fals
 
           {/* اتصال به هدف یا طرح بالادستی */}
           {(goal || plan) && (
-            <div className="flex items-center gap-1.5 text-[11px] text-stone-600">
-              <Compass size={13} className="text-amber-700" />
+            <div className="flex items-center gap-1.5 text-[11px] text-stone-700">
+              <Compass size={14} className="text-amber-700 shrink-0" aria-hidden="true" />
               <span>متصل به هدف بالادستی:</span>
               <span className="font-bold text-stone-900 bg-white px-2 py-0.5 rounded-md border border-stone-200">
                 {goal?.title || plan?.title}
@@ -286,44 +471,54 @@ export const TaskItem: React.FC<TaskItemProps> = ({ task, onEdit, compact = fals
           {/* تنظیمات آلارم و ساعت انجام این کار */}
           <div className="flex flex-wrap items-center justify-between gap-2 p-2.5 bg-white rounded-xl border border-stone-200/80">
             <div className="flex items-center gap-2">
-              <div className={`p-1.5 rounded-lg ${task.hasAlarm ? 'bg-amber-100 text-amber-800' : 'bg-stone-100 text-stone-400'}`}>
-                {task.hasAlarm ? <BellRing size={14} /> : <BellOff size={14} />}
+              <div
+                className={`p-2 rounded-xl ${
+                  task.hasAlarm ? 'bg-amber-100 text-amber-800' : 'bg-stone-100 text-stone-500'
+                }`}
+              >
+                {task.hasAlarm ? (
+                  <BellRing size={16} aria-hidden="true" />
+                ) : (
+                  <BellOff size={16} aria-hidden="true" />
+                )}
               </div>
               <div>
-                <span className="text-xs font-bold text-stone-800 block">
+                <span className="text-xs font-bold text-stone-900 block">
                   {task.hasAlarm ? 'آلارم و یادآوری فعال است' : 'آلارم غیرفعال است'}
                 </span>
-                <span className="text-[10px] text-stone-500 font-mono">
+                <span className="text-[11px] text-stone-600 font-mono">
                   {task.dueTime ? `ساعت انجام: ${task.dueTime}` : 'بدون ساعت مشخص'}
-                  {task.hasAlarm && task.alarmMinutesBefore ? ` • ${toPersianDigits(task.alarmMinutesBefore)} دقیقه قبل` : ''}
+                  {task.hasAlarm && task.alarmMinutesBefore
+                    ? ` • ${toPersianDigits(task.alarmMinutesBefore)} دقیقه قبل`
+                    : ''}
                 </span>
               </div>
             </div>
 
-            <div className="flex items-center gap-1.5">
-              <button
-                type="button"
-                onClick={() => {
-                  const willEnable = !task.hasAlarm;
-                  store.updateTask(task.id, {
-                    hasAlarm: willEnable,
-                    dueTime: willEnable && !task.dueTime ? '۱۰:۰۰' : task.dueTime,
-                  });
-                }}
-                className={`px-2.5 py-1 rounded-lg text-xs font-bold transition-colors cursor-pointer border ${
-                  task.hasAlarm
-                    ? 'bg-amber-50 text-amber-900 border-amber-300 hover:bg-amber-100'
-                    : 'bg-stone-50 text-stone-700 border-stone-200 hover:bg-stone-100'
-                }`}
-              >
-                {task.hasAlarm ? 'غیرفعال‌سازی زنگ' : 'فعال‌سازی زنگ آلارم'}
-              </button>
-            </div>
+            <button
+              type="button"
+              onClick={() => {
+                const willEnable = !task.hasAlarm;
+                store.updateTask(task.id, {
+                  hasAlarm: willEnable,
+                  dueTime: willEnable && !task.dueTime ? '۱۰:۰۰' : task.dueTime,
+                });
+              }}
+              className={`min-h-11 px-3 py-1.5 rounded-xl text-xs font-bold transition-colors cursor-pointer border flex items-center justify-center focus:outline-none focus:ring-2 focus:ring-stone-800/70 ${
+                task.hasAlarm
+                  ? 'bg-amber-50 text-amber-950 border-amber-300 hover:bg-amber-100'
+                  : 'bg-stone-50 text-stone-800 border-stone-300 hover:bg-stone-100'
+              }`}
+            >
+              {task.hasAlarm ? 'غیرفعال‌سازی زنگ' : 'فعال‌سازی زنگ آلارم'}
+            </button>
           </div>
 
           {/* زیروظایف */}
           <div className="space-y-2 pt-1">
-            <span className="text-[11px] font-bold text-stone-600 block">گام‌های اجرایی (زیروظایف):</span>
+            <span className="text-[11px] font-bold text-stone-700 block">
+              گام‌های اجرایی (زیروظایف):
+            </span>
             {task.subtasks && task.subtasks.length > 0 && (
               <div className="space-y-1.5 bg-white p-2.5 rounded-xl border border-stone-200/80">
                 {task.subtasks.map((st) => (
@@ -336,51 +531,62 @@ export const TaskItem: React.FC<TaskItemProps> = ({ task, onEdit, compact = fals
                         type="checkbox"
                         checked={st.completed}
                         onChange={() => store.toggleSubTask(task.id, st.id)}
-                        className="rounded text-stone-900 focus:ring-0 w-3.5 h-3.5"
+                        className="rounded text-stone-900 focus:ring-stone-800 w-4 h-4 cursor-pointer"
+                        aria-label={`تکمیل گام: ${st.title}`}
                       />
                       <span
                         className={`truncate ${
-                          st.completed ? 'line-through text-stone-400' : 'text-stone-700'
+                          st.completed ? 'line-through text-stone-400' : 'text-stone-800 font-medium'
                         }`}
                       >
                         {st.title}
                       </span>
                     </label>
 
+                    {/* دکمه حذف زیروظیفه:
+                        در موبایل همیشه دیده می‌شود (opacity-100) و در دسکتاپ با hover پدیدار می‌گردد.
+                        دارای تاچ‌تارگت استاندارد ۴۴×۴۴ */}
                     <button
                       type="button"
                       onClick={() => store.deleteSubTask(task.id, st.id)}
-                      className="opacity-0 group-hover/st:opacity-100 text-stone-300 hover:text-rose-600 p-0.5 transition-opacity"
-                      title="حذف گام"
+                      className="opacity-100 sm:opacity-0 sm:group-hover/st:opacity-100 text-stone-400 hover:text-rose-600 min-w-11 min-h-11 flex items-center justify-center rounded-xl transition-opacity focus:outline-none focus:ring-2 focus:ring-rose-500 cursor-pointer"
+                      aria-label={`حذف گام: ${st.title}`}
+                      title="حذف گام (با امکان بازگردانی)"
                     >
-                      <Trash2 size={11} />
+                      <Trash2 size={14} aria-hidden="true" />
                     </button>
                   </div>
                 ))}
               </div>
             )}
 
-            {/* فرم ثبت زیروظیفه جدید */}
+            {/* فرم ثبت زیروظیفه جدید با label استاندارد sr-only */}
             <form onSubmit={handleAddSubTask} className="flex items-center gap-1.5">
+              <label htmlFor={`subtask-input-${task.id}`} className="sr-only">
+                افزودن گام جدید به کار
+              </label>
               <input
+                id={`subtask-input-${task.id}`}
                 type="text"
                 value={newSubTaskText}
+                maxLength={200}
                 onChange={(e) => setNewSubTaskText(e.target.value)}
                 placeholder="افزودن گام جدید به این کار..."
-                className="flex-1 px-3 py-1.5 bg-white border border-stone-200 rounded-lg text-xs placeholder:text-stone-400 focus:outline-hidden focus:border-stone-400"
+                className="flex-1 px-3 py-2 bg-white border border-stone-300 rounded-xl text-xs placeholder:text-stone-500 text-stone-900 focus:outline-none focus:ring-2 focus:ring-stone-800/70 focus:ring-offset-1 focus:ring-offset-white"
               />
               <button
                 type="submit"
                 disabled={!newSubTaskText.trim()}
-                className="px-2.5 py-1.5 bg-stone-800 hover:bg-stone-900 text-stone-100 rounded-lg text-xs font-semibold disabled:opacity-40 transition-colors flex items-center gap-1 cursor-pointer"
+                className="min-h-11 px-3.5 bg-stone-900 hover:bg-black text-stone-100 rounded-xl text-xs font-semibold disabled:opacity-40 transition-colors flex items-center justify-center gap-1 cursor-pointer shrink-0 focus:outline-none focus:ring-2 focus:ring-stone-800/70"
+                aria-label="افزودن گام جدید"
               >
-                <Plus size={12} />
+                <Plus size={14} aria-hidden="true" />
                 <span>افزودن</span>
               </button>
             </form>
           </div>
         </div>
       )}
-    </div>
+    </article>
   );
-};
+});

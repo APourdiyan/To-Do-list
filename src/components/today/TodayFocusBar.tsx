@@ -95,10 +95,12 @@ export const TodayFocusBar: React.FC = () => {
         {!isEditing && (
           <div className="flex items-center gap-1 self-end sm:self-auto shrink-0">
             <button
+              type="button"
               onClick={() => setIsEditing(true)}
-              className="text-[11px] text-stone-500 hover:text-stone-800 flex items-center gap-1 px-2 py-1 rounded-md hover:bg-stone-100 transition-colors cursor-pointer"
+              className="min-h-11 px-3 py-1.5 text-xs text-stone-700 hover:text-stone-950 flex items-center gap-1.5 rounded-xl hover:bg-stone-100 transition-colors cursor-pointer focus:outline-none focus:ring-2 focus:ring-stone-800/70"
+              aria-label={entry.focus ? 'ویرایش تمرکز امروز' : 'افزودن تمرکز امروز'}
             >
-              <Edit2 size={11} />
+              <Edit2 size={13} aria-hidden="true" />
               <span>{entry.focus ? 'ویرایش' : 'افزودن'}</span>
             </button>
           </div>
@@ -107,51 +109,58 @@ export const TodayFocusBar: React.FC = () => {
 
       {/* حالت ادیت جمع‌وجور */}
       {isEditing && (
-        <div className="flex items-center gap-1.5 pt-1">
+        <div className="flex items-center gap-2 pt-1">
           <input
             type="text"
             value={focusInput}
             onChange={(e) => setFocusInput(e.target.value)}
             onKeyDown={handleKeyDown}
+            aria-label="عنوان تمرکز و جهت‌گیری امروز"
             placeholder="مثال: اولویت با تحویل پروژه و پیاده‌روی عصرگاهی..."
             autoFocus
-            className="flex-1 px-3 py-1.5 bg-stone-50 border border-stone-300 focus:border-stone-800 rounded-xl text-xs sm:text-sm font-medium text-stone-900 placeholder:text-stone-400 focus:outline-hidden focus:bg-white transition-all"
+            className="flex-1 px-3 py-2 bg-stone-50 border border-stone-300 focus:border-stone-800 rounded-xl text-xs sm:text-sm font-medium text-stone-900 placeholder:text-stone-500 focus:outline-none focus:ring-2 focus:ring-stone-800/70 focus:bg-white transition-all"
           />
           <button
+            type="button"
             onClick={handleSave}
-            className="px-3 py-1.5 bg-stone-900 hover:bg-stone-800 text-stone-100 rounded-xl text-xs font-bold flex items-center gap-1 transition-colors shrink-0 cursor-pointer"
+            className="min-h-11 px-4 py-2 bg-stone-900 hover:bg-stone-800 text-stone-100 rounded-xl text-xs font-bold flex items-center gap-1.5 transition-colors shrink-0 cursor-pointer focus:outline-none focus:ring-2 focus:ring-stone-800/70"
           >
-            <Check size={12} />
+            <Check size={14} aria-hidden="true" />
             <span>ثبت</span>
           </button>
           <button
+            type="button"
             onClick={() => {
               setFocusInput(entry.focus || '');
               setIsEditing(false);
             }}
-            className="p-1.5 text-stone-400 hover:text-stone-700 rounded-lg hover:bg-stone-100 text-xs transition-colors cursor-pointer"
+            className="min-w-11 min-h-11 flex items-center justify-center text-stone-500 hover:text-stone-900 rounded-xl hover:bg-stone-100 text-xs transition-colors cursor-pointer focus:outline-none focus:ring-2 focus:ring-stone-800/70"
             title="انصراف"
+            aria-label="انصراف از ویرایش"
           >
-            <X size={14} />
+            <X size={16} aria-hidden="true" />
           </button>
         </div>
       )}
 
       {/* سطر پیوسته حال‌وهوای روز به صورت برچسب‌های فشرده و مرتب */}
-      <div className="flex items-center justify-between gap-2 pt-2 border-t border-stone-100 text-[11px]">
-        <span className="text-stone-400 shrink-0">حال‌وهوا:</span>
+      <div className="flex items-center justify-between gap-2 pt-2 border-t border-stone-100 text-xs">
+        <span className="text-stone-600 font-bold shrink-0">حال‌وهوا:</span>
 
-        <div className="flex items-center gap-1 sm:gap-1.5 overflow-x-auto pb-0.5">
+        <div className="flex items-center gap-1.5 overflow-x-auto pb-0.5">
           {MOODS.map((m) => {
             const isSelected = entry.mood === m.id;
             return (
               <button
                 key={m.id}
+                type="button"
                 onClick={() => handleSelectMood(m.id)}
-                className={`px-2 py-0.5 rounded-lg border text-[11px] font-medium transition-all flex items-center gap-1 select-none cursor-pointer whitespace-nowrap ${
+                aria-pressed={isSelected}
+                aria-label={`حال و هوای ${m.label}`}
+                className={`min-h-9 px-3 py-1 rounded-xl border text-xs font-semibold transition-all flex items-center gap-1.5 select-none cursor-pointer whitespace-nowrap focus:outline-none focus:ring-2 focus:ring-stone-800/70 ${
                   isSelected
                     ? `${m.activeColor} shadow-3xs font-bold`
-                    : 'bg-stone-50 text-stone-600 border-stone-200/80 hover:bg-stone-100 hover:text-stone-900'
+                    : 'bg-stone-50 text-stone-700 border-stone-200 hover:bg-stone-100 hover:text-stone-950'
                 }`}
               >
                 <span>{m.icon}</span>

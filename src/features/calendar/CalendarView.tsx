@@ -695,7 +695,7 @@ export const CalendarView: React.FC = () => {
             </div>
 
             {selectedDayEvents.length === 0 ? (
-              <div className="text-[11px] text-stone-400 bg-stone-50 rounded-lg p-2 text-center border border-dashed border-stone-200">
+              <div className="text-xs text-stone-600 font-medium bg-stone-50 rounded-xl p-3 text-center border border-dashed border-stone-200">
                 هیچ رویدادی برای این روز ثبت نشده است
               </div>
             ) : (
@@ -738,7 +738,7 @@ export const CalendarView: React.FC = () => {
             </div>
 
             {selectedDayTasks.length === 0 ? (
-              <div className="text-[11px] text-stone-400 bg-stone-50 rounded-lg p-3 text-center border border-dashed border-stone-200">
+              <div className="text-xs text-stone-600 font-medium bg-stone-50 rounded-xl p-3 text-center border border-dashed border-stone-200">
                 کاری برای این تاریخ برنامه‌ریزی نشده است
               </div>
             ) : (

@@ -1,4 +1,4 @@
-import { useSyncExternalStore } from 'react';
+import { useSyncExternalStore, useRef } from 'react';
 import {
   ActiveTab,
   DomainGroup,
@@ -51,6 +51,15 @@ export const DEFAULT_CHECKLIST_ITEMS: DailyChecklistItem[] = [
   { id: 'ch-7', domainId: 'general', title: 'مرور پایانی روز و نظم‌بخشی به فردا', description: 'بررسی کارهای انجام‌شده و آمادگی فردا' },
 ];
 
+export interface PendingDeleteRecord {
+  id: string;
+  type: 'task' | 'subtask' | 'goal' | 'plan';
+  title: string;
+  data: any;
+  parentId?: string;
+  timestamp: number;
+}
+
 export interface StoreState {
   goals: Goal[];
   plans: Plan[];
@@ -75,6 +84,9 @@ export interface StoreState {
   manageDomainsModalOpen: boolean; // مدال شخصی‌سازی و مدیریت ابعاد زندگی
   profileModalOpen: boolean; // مدال پروفایل و انتقال به گوشی جدید
   quickAddDefaultType: 'task' | 'event' | 'goal';
+  lastDeletedTask: Task | null;
+  pendingDelete: PendingDeleteRecord | null;
+  storageError: string | null;
 }
 
 function loadInitialState(): StoreState {
@@ -129,6 +141,7 @@ function loadInitialState(): StoreState {
         manageDomainsModalOpen: false,
         profileModalOpen: false,
         quickAddDefaultType: 'task',
+        lastDeletedTask: null,
       };
     }
   } catch (e) {
@@ -160,37 +173,62 @@ function loadInitialState(): StoreState {
     manageDomainsModalOpen: false,
     profileModalOpen: false,
     quickAddDefaultType: 'task',
+    lastDeletedTask: null,
+    pendingDelete: null,
+    storageError: null,
   };
 }
 
 let currentState: StoreState = loadInitialState();
 const listeners = new Set<() => void>();
 
-function notify() {
-  // ذخیره پایدار در localStorage
-  try {
-    localStorage.setItem(
-      STORAGE_KEY,
-      JSON.stringify({
-        goals: currentState.goals,
-        plans: currentState.plans,
-        tasks: currentState.tasks,
-        events: currentState.events,
-        domainGroups: currentState.domainGroups,
-        dailyEntries: currentState.dailyEntries,
-        dailyAccountings: currentState.dailyAccountings,
-        dailyExpenses: currentState.dailyExpenses,
-        checklistCategories: currentState.checklistCategories,
-        checklistItems: currentState.checklistItems,
-        checklistLogs: currentState.checklistLogs,
-        settings: currentState.settings,
-        userProfile: currentState.userProfile,
-      })
-    );
-  } catch (e) {
-    console.error('Failed to persist to localStorage', e);
+let persistTimeout: ReturnType<typeof setTimeout> | null = null;
+
+function schedulePersist() {
+  if (persistTimeout) {
+    clearTimeout(persistTimeout);
   }
 
+  persistTimeout = setTimeout(() => {
+    persistTimeout = null;
+    try {
+      localStorage.setItem(
+        STORAGE_KEY,
+        JSON.stringify({
+          goals: currentState.goals,
+          plans: currentState.plans,
+          tasks: currentState.tasks,
+          events: currentState.events,
+          domainGroups: currentState.domainGroups,
+          dailyEntries: currentState.dailyEntries,
+          dailyAccountings: currentState.dailyAccountings,
+          dailyExpenses: currentState.dailyExpenses,
+          checklistCategories: currentState.checklistCategories,
+          checklistItems: currentState.checklistItems,
+          checklistLogs: currentState.checklistLogs,
+          settings: currentState.settings,
+          userProfile: currentState.userProfile,
+        })
+      );
+      if (currentState.storageError) {
+        currentState = { ...currentState, storageError: null };
+        listeners.forEach((listener) => listener());
+      }
+    } catch (e) {
+      console.error('Failed to persist to localStorage', e);
+      if (!currentState.storageError) {
+        currentState = {
+          ...currentState,
+          storageError: 'ذخیره‌سازی محلی ناموفق بود، تغییرات شما ممکن است پس از بستن مرورگر از دست برود.',
+        };
+        listeners.forEach((listener) => listener());
+      }
+    }
+  }, 300);
+}
+
+function notify() {
+  schedulePersist();
   listeners.forEach((listener) => listener());
 }
 
@@ -268,9 +306,68 @@ export const store = {
   },
 
   deleteTask(taskId: string) {
+    const taskToDelete = currentState.tasks.find((t) => t.id === taskId) || null;
     updateState((prev) => ({
       tasks: prev.tasks.filter((t) => t.id !== taskId),
+      lastDeletedTask: taskToDelete,
+      pendingDelete: taskToDelete
+        ? {
+            id: taskId,
+            type: 'task',
+            title: taskToDelete.title,
+            data: taskToDelete,
+            timestamp: Date.now(),
+          }
+        : prev.pendingDelete,
     }));
+  },
+
+  restoreLastDeletedTask() {
+    this.restorePendingDelete();
+  },
+
+  clearLastDeletedTask() {
+    this.clearPendingDelete();
+  },
+
+  restorePendingDelete() {
+    const pending = currentState.pendingDelete;
+    if (!pending) return;
+    updateState((prev) => {
+      let nextTasks = prev.tasks;
+      let nextGoals = prev.goals;
+      let nextPlans = prev.plans;
+
+      if (pending.type === 'task') {
+        nextTasks = [pending.data as Task, ...prev.tasks];
+      } else if (pending.type === 'subtask' && pending.parentId) {
+        nextTasks = prev.tasks.map((t) => {
+          if (t.id !== pending.parentId) return t;
+          const subtasks = t.subtasks ? [...t.subtasks, pending.data] : [pending.data];
+          return { ...t, subtasks };
+        });
+      } else if (pending.type === 'goal') {
+        nextGoals = [pending.data as Goal, ...prev.goals];
+      } else if (pending.type === 'plan') {
+        nextPlans = [pending.data as Plan, ...prev.plans];
+      }
+
+      return {
+        tasks: nextTasks,
+        goals: nextGoals,
+        plans: nextPlans,
+        pendingDelete: null,
+        lastDeletedTask: null,
+      };
+    });
+  },
+
+  clearPendingDelete() {
+    updateState({ pendingDelete: null, lastDeletedTask: null });
+  },
+
+  dismissStorageError() {
+    updateState({ storageError: null });
   },
 
   toggleTaskCompleted(taskId: string) {
@@ -321,12 +418,24 @@ export const store = {
   },
 
   deleteSubTask(taskId: string, subtaskId: string) {
+    const task = currentState.tasks.find((t) => t.id === taskId);
+    const subtask = task?.subtasks?.find((st) => st.id === subtaskId);
     updateState((prev) => ({
       tasks: prev.tasks.map((t) => {
         if (t.id !== taskId || !t.subtasks) return t;
         const subtasks = t.subtasks.filter((st) => st.id !== subtaskId);
         return { ...t, subtasks };
       }),
+      pendingDelete: subtask
+        ? {
+            id: subtaskId,
+            type: 'subtask',
+            title: subtask.title,
+            data: subtask,
+            parentId: taskId,
+            timestamp: Date.now(),
+          }
+        : prev.pendingDelete,
     }));
   },
 
@@ -351,11 +460,21 @@ export const store = {
   },
 
   deleteGoal(goalId: string) {
+    const goalToDelete = currentState.goals.find((g) => g.id === goalId);
     updateState((prev) => ({
       goals: prev.goals.filter((g) => g.id !== goalId),
       // حذف ارجاعات این هدف در وظایف و برنامه‌ها
       tasks: prev.tasks.map((t) => (t.goalId === goalId ? { ...t, goalId: undefined } : t)),
       plans: prev.plans.map((p) => (p.goalId === goalId ? { ...p, goalId: undefined } : p)),
+      pendingDelete: goalToDelete
+        ? {
+            id: goalId,
+            type: 'goal',
+            title: goalToDelete.title,
+            data: goalToDelete,
+            timestamp: Date.now(),
+          }
+        : prev.pendingDelete,
     }));
   },
 
@@ -550,9 +669,19 @@ export const store = {
   },
 
   deletePlan(planId: string) {
+    const planToDelete = currentState.plans.find((p) => p.id === planId);
     updateState((prev) => ({
       plans: prev.plans.filter((p) => p.id !== planId),
       tasks: prev.tasks.map((t) => (t.planId === planId ? { ...t, planId: undefined } : t)),
+      pendingDelete: planToDelete
+        ? {
+            id: planId,
+            type: 'plan',
+            title: planToDelete.title,
+            data: planToDelete,
+            timestamp: Date.now(),
+          }
+        : prev.pendingDelete,
     }));
   },
 
@@ -1056,6 +1185,23 @@ export const store = {
   },
 };
 
-export function useStore(): StoreState {
-  return useSyncExternalStore(store.subscribe, store.getSnapshot);
+export function useStore<T = StoreState>(selector?: (s: StoreState) => T): T {
+  const lastStateRef = useRef<StoreState | null>(null);
+  const lastSelectedRef = useRef<T | null>(null);
+
+  const getSelection = () => {
+    const state = store.getSnapshot();
+    if (!selector) {
+      return state as unknown as T;
+    }
+    if (state === lastStateRef.current && lastSelectedRef.current !== null) {
+      return lastSelectedRef.current;
+    }
+    const selected = selector(state);
+    lastStateRef.current = state;
+    lastSelectedRef.current = selected;
+    return selected;
+  };
+
+  return useSyncExternalStore(store.subscribe, getSelection, getSelection);
 }
