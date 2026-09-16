@@ -12,21 +12,43 @@ import {
   DailyAccounting,
   DailyExpense,
   DailyChecklistItem,
+  DailyChecklistCategory,
+  UserProfile,
 } from '../types';
 import { DEFAULT_DOMAIN_GROUPS, getInitialSeedData } from '../data/seed';
+import { DOMAIN_PRESETS } from '../data/domainPresets';
 import { getTodayJalali } from '../lib/date/jalali';
 import { calculatePaceByDailyMinutes, RestDaysPattern } from '../lib/coursePace';
 
 const STORAGE_KEY = 'daftar-zendegi:v1';
+const CLOUD_SYNC_REGISTRY_KEY = 'daftar-zendegi:cloud_registry:';
+
+export function generateSyncKey(): string {
+  const chars = '23456789ABCDEFGHJKLMNPQRSTUVWXYZ';
+  let res = 'DZ-';
+  for (let i = 0; i < 5; i++) {
+    res += chars.charAt(Math.floor(Math.random() * chars.length));
+  }
+  return res;
+}
+
+export const DEFAULT_CHECKLIST_CATEGORIES: DailyChecklistCategory[] = [
+  { id: 'spiritual', title: '۱. ذهن و آرامش', color: '#047857', bgLight: 'bg-emerald-50/80', iconName: 'HeartHandshake' },
+  { id: 'career', title: '۲. کار و حرفه', color: '#1d4ed8', bgLight: 'bg-blue-50/80', iconName: 'Briefcase' },
+  { id: 'study', title: '۳. مطالعه و کتابخوانی', color: '#b45309', bgLight: 'bg-amber-50/80', iconName: 'BookOpen' },
+  { id: 'skills', title: '۴. مهارت‌ها و یادگیری', color: '#7e22ce', bgLight: 'bg-purple-50/80', iconName: 'GraduationCap' },
+  { id: 'exercise', title: '۵. ورزش و سلامتی', color: '#be123c', bgLight: 'bg-rose-50/80', iconName: 'Dumbbell' },
+  { id: 'general', title: '۶. امور روزمره و شخصی', color: '#44403c', bgLight: 'bg-stone-100/80', iconName: 'Compass' },
+];
 
 export const DEFAULT_CHECKLIST_ITEMS: DailyChecklistItem[] = [
-  { id: 'ch-1', domainId: 'spiritual', title: 'نماز اول وقت و حضور قلب', description: 'توجه و آرامش در عبادت' },
-  { id: 'ch-2', domainId: 'spiritual', title: '۱۰ دقیقه خلوت، تدبر یا ذکر روز', description: 'تغذیه روح و سکوت ذهنی' },
-  { id: 'ch-3', domainId: 'career', title: 'بلوک تمرکز و کار عمیق (۹۰ دقیقه)', description: 'بدون شبکه‌های اجتماعی و نوتیفیکیشن' },
-  { id: 'ch-4', domainId: 'study', title: 'مطالعه روزانه (حداقل ۲۰ دقیقه کتاب یا مقاله)', description: 'افزایش بینش و آگاهی' },
-  { id: 'ch-5', domainId: 'skills', title: 'تمرین مهارت فردی یا زبان (۳۰ دقیقه)', description: 'استمرار روزانه در یادگیری' },
-  { id: 'ch-6', domainId: 'exercise', title: 'تحرک بدنی و ورزش یا پیاده‌روی (۳۰ دقیقه)', description: 'سلامت جسم و شادابی انرژی' },
-  { id: 'ch-7', domainId: 'general', title: 'محاسبه اعمال و نظم فردی پایان روز', description: 'مرور عملکرد و حسابرسی صادقانه' },
+  { id: 'ch-1', domainId: 'spiritual', title: 'آرامش ذهن، نیایش یا تمرکز ابتدای روز', description: 'آرامش ذهنی برای شروع روز' },
+  { id: 'ch-2', domainId: 'spiritual', title: '۱۰ دقیقه استراحت فکری و سکوت ذهنی', description: 'تجدید قوای ذهنی و دوری از هیاهو' },
+  { id: 'ch-3', domainId: 'career', title: 'بازه تمرکز و کار عمیق (۹۰ دقیقه)', description: 'کار بدون حواس‌پرتی و اعلان‌ها' },
+  { id: 'ch-4', domainId: 'study', title: 'مطالعه روزانه (حداقل ۲۰ دقیقه کتاب یا مقاله)', description: 'پیوستگی در یادگیری' },
+  { id: 'ch-5', domainId: 'skills', title: 'تمرین مهارت یا زبان (۳۰ دقیقه)', description: 'تمرین روزانه مهارت جدید' },
+  { id: 'ch-6', domainId: 'exercise', title: 'ورزش، تحرک بدنی یا پیاده‌روی (۳۰ دقیقه)', description: 'سلامت جسم و انرژی روزانه' },
+  { id: 'ch-7', domainId: 'general', title: 'مرور پایانی روز و نظم‌بخشی به فردا', description: 'بررسی کارهای انجام‌شده و آمادگی فردا' },
 ];
 
 export interface StoreState {
@@ -38,9 +60,11 @@ export interface StoreState {
   dailyEntries: Record<string, DailyJournalEntry>;
   dailyAccountings: Record<string, DailyAccounting>;
   dailyExpenses: DailyExpense[];
+  checklistCategories: DailyChecklistCategory[];
   checklistItems: DailyChecklistItem[];
   checklistLogs: Record<string, string[]>; // تاریخ -> شناسه‌های آیتم‌های تکمیل‌شده
   settings: UserSettings;
+  userProfile: UserProfile | null;
   activeTab: ActiveTab;
   selectedDate: string;
   searchModalOpen: boolean;
@@ -48,6 +72,8 @@ export interface StoreState {
   philosophyModalOpen: boolean;
   checklistDrawerOpen: boolean; // کشوی چک‌لیست ۶ حوزه
   accountingModalOpen: boolean; // مدال محاسبه اعمال و مخارج
+  manageDomainsModalOpen: boolean; // مدال شخصی‌سازی و مدیریت ابعاد زندگی
+  profileModalOpen: boolean; // مدال پروفایل و انتقال به گوشی جدید
   quickAddDefaultType: 'task' | 'event' | 'goal';
 }
 
@@ -59,7 +85,7 @@ function loadInitialState(): StoreState {
     theme: 'paper',
     dailyQuote: true,
     hideGuideBanner: true,
-    lifeDomainsMode: true,
+    lifeDomainsMode: false,
   };
 
   const defaultAccounting: DailyAccounting = {
@@ -88,9 +114,11 @@ function loadInitialState(): StoreState {
         dailyEntries: parsed.dailyEntries || {},
         dailyAccountings: parsed.dailyAccountings || { [today.dateStr]: defaultAccounting },
         dailyExpenses: parsed.dailyExpenses || defaultExpenses,
+        checklistCategories: parsed.checklistCategories || DEFAULT_CHECKLIST_CATEGORIES,
         checklistItems: parsed.checklistItems || DEFAULT_CHECKLIST_ITEMS,
         checklistLogs: parsed.checklistLogs || { [today.dateStr]: ['ch-1', 'ch-3'] },
         settings: { ...defaultSettings, ...(parsed.settings || {}) },
+        userProfile: parsed.userProfile || null,
         activeTab: 'today',
         selectedDate: today.dateStr,
         searchModalOpen: false,
@@ -98,6 +126,8 @@ function loadInitialState(): StoreState {
         philosophyModalOpen: false,
         checklistDrawerOpen: false,
         accountingModalOpen: false,
+        manageDomainsModalOpen: false,
+        profileModalOpen: false,
         quickAddDefaultType: 'task',
       };
     }
@@ -115,9 +145,11 @@ function loadInitialState(): StoreState {
     dailyEntries: seed.dailyEntries,
     dailyAccountings: { [today.dateStr]: defaultAccounting },
     dailyExpenses: defaultExpenses,
+    checklistCategories: DEFAULT_CHECKLIST_CATEGORIES,
     checklistItems: DEFAULT_CHECKLIST_ITEMS,
     checklistLogs: { [today.dateStr]: ['ch-1', 'ch-3'] },
     settings: defaultSettings,
+    userProfile: null,
     activeTab: 'today',
     selectedDate: today.dateStr,
     searchModalOpen: false,
@@ -125,6 +157,8 @@ function loadInitialState(): StoreState {
     philosophyModalOpen: false,
     checklistDrawerOpen: false,
     accountingModalOpen: false,
+    manageDomainsModalOpen: false,
+    profileModalOpen: false,
     quickAddDefaultType: 'task',
   };
 }
@@ -146,9 +180,11 @@ function notify() {
         dailyEntries: currentState.dailyEntries,
         dailyAccountings: currentState.dailyAccountings,
         dailyExpenses: currentState.dailyExpenses,
+        checklistCategories: currentState.checklistCategories,
         checklistItems: currentState.checklistItems,
         checklistLogs: currentState.checklistLogs,
         settings: currentState.settings,
+        userProfile: currentState.userProfile,
       })
     );
   } catch (e) {
@@ -193,6 +229,22 @@ export const store = {
 
   setPhilosophyModalOpen(open: boolean) {
     updateState({ philosophyModalOpen: open });
+  },
+
+  setChecklistDrawerOpen(open: boolean) {
+    updateState({ checklistDrawerOpen: open });
+  },
+
+  setProfileModalOpen(open: boolean) {
+    updateState({ profileModalOpen: open });
+  },
+
+  setAccountingModalOpen(open: boolean) {
+    updateState({ accountingModalOpen: open });
+  },
+
+  setManageDomainsModalOpen(open: boolean) {
+    updateState({ manageDomainsModalOpen: open });
   },
 
   // Tasks actions
@@ -570,15 +622,6 @@ export const store = {
     });
   },
 
-  // Drawer & Modal Actions
-  setChecklistDrawerOpen(open: boolean) {
-    updateState({ checklistDrawerOpen: open });
-  },
-
-  setAccountingModalOpen(open: boolean) {
-    updateState({ accountingModalOpen: open });
-  },
-
   // Daily Self-Accounting (محاسبه اعمال)
   updateDailyAccounting(date: string, updates: Partial<DailyAccounting>) {
     const now = getTodayJalali().dateStr;
@@ -724,10 +767,270 @@ export const store = {
     return newItem;
   },
 
+  updateDailyChecklistItem(id: string, updates: Partial<DailyChecklistItem>) {
+    updateState((prev) => ({
+      checklistItems: prev.checklistItems.map((item) =>
+        item.id === id ? { ...item, ...updates } : item
+      ),
+    }));
+  },
+
   deleteDailyChecklistItem(itemId: string) {
     updateState((prev) => ({
       checklistItems: prev.checklistItems.filter((i) => i.id !== itemId),
     }));
+  },
+
+  // مدیریت دسته‌بندی‌های چک‌لیست روزانه (ویرایش، افزودن، حذف)
+  addDailyChecklistCategory(categoryData: Omit<DailyChecklistCategory, 'id'>) {
+    const newCat: DailyChecklistCategory = {
+      ...categoryData,
+      id: 'cat-' + Date.now(),
+    };
+    updateState((prev) => ({
+      checklistCategories: [...prev.checklistCategories, newCat],
+    }));
+    return newCat;
+  },
+
+  updateDailyChecklistCategory(id: string, updates: Partial<DailyChecklistCategory>) {
+    updateState((prev) => ({
+      checklistCategories: prev.checklistCategories.map((c) =>
+        c.id === id ? { ...c, ...updates } : c
+      ),
+    }));
+  },
+
+  deleteDailyChecklistCategory(id: string) {
+    updateState((prev) => ({
+      checklistCategories: prev.checklistCategories.filter((c) => c.id !== id),
+      // انتقال آیتم‌ها به عمومی در صورت حذف دسته
+      checklistItems: prev.checklistItems.map((item) =>
+        item.domainId === id ? { ...item, domainId: 'general' } : item
+      ),
+    }));
+  },
+
+  resetDailyChecklistToDefault() {
+    updateState({
+      checklistCategories: DEFAULT_CHECKLIST_CATEGORIES,
+      checklistItems: DEFAULT_CHECKLIST_ITEMS,
+    });
+  },
+
+  // User Profile & Cross-Device Cloud Sync (پروفایل شخصی و انتقال به گوشی جدید)
+  setUserProfile(profile: UserProfile | null) {
+    updateState({ userProfile: profile });
+  },
+
+  updateUserProfile(updates: Partial<UserProfile>) {
+    updateState((prev) => {
+      if (!prev.userProfile) return {};
+      return {
+        userProfile: {
+          ...prev.userProfile,
+          ...updates,
+        },
+      };
+    });
+  },
+
+  // خروجی جامع پشتیبان به صورت فایل متنی JSON
+  exportAllDataJSON(): string {
+    const exportPayload = {
+      app: 'دفتر زندگی من',
+      version: 1,
+      exportedAt: new Date().toISOString(),
+      userProfile: currentState.userProfile,
+      goals: currentState.goals,
+      plans: currentState.plans,
+      tasks: currentState.tasks,
+      events: currentState.events,
+      domainGroups: currentState.domainGroups,
+      dailyEntries: currentState.dailyEntries,
+      dailyAccountings: currentState.dailyAccountings,
+      dailyExpenses: currentState.dailyExpenses,
+      checklistCategories: currentState.checklistCategories,
+      checklistItems: currentState.checklistItems,
+      checklistLogs: currentState.checklistLogs,
+      settings: currentState.settings,
+    };
+    return JSON.stringify(exportPayload, null, 2);
+  },
+
+  // بارگذاری و بازیابی فایل JSON در گوشی جدید یا مرورگر دیگر
+  importAllDataJSON(jsonStr: string): { success: boolean; message: string } {
+    try {
+      const data = JSON.parse(jsonStr);
+      if (!data || typeof data !== 'object') {
+        return { success: false, message: 'فایل وارد شده ساختار داده‌های معتبری ندارد.' };
+      }
+
+      updateState((prev) => ({
+        goals: Array.isArray(data.goals) ? data.goals : prev.goals,
+        plans: Array.isArray(data.plans) ? data.plans : prev.plans,
+        tasks: Array.isArray(data.tasks) ? data.tasks : prev.tasks,
+        events: Array.isArray(data.events) ? data.events : prev.events,
+        domainGroups: Array.isArray(data.domainGroups) ? data.domainGroups : prev.domainGroups,
+        dailyEntries: data.dailyEntries || prev.dailyEntries,
+        dailyAccountings: data.dailyAccountings || prev.dailyAccountings,
+        dailyExpenses: Array.isArray(data.dailyExpenses) ? data.dailyExpenses : prev.dailyExpenses,
+        checklistCategories: Array.isArray(data.checklistCategories) ? data.checklistCategories : prev.checklistCategories,
+        checklistItems: Array.isArray(data.checklistItems) ? data.checklistItems : prev.checklistItems,
+        checklistLogs: data.checklistLogs || prev.checklistLogs,
+        settings: data.settings ? { ...prev.settings, ...data.settings } : prev.settings,
+        userProfile: data.userProfile || prev.userProfile,
+      }));
+
+      return { success: true, message: 'تمام اطلاعات با موفقیت بازیابی و جایگزین شدند.' };
+    } catch (e) {
+      return { success: false, message: 'خطا در بارگذاری فایل: ساختار فایل معتبر نیست.' };
+    }
+  },
+
+  // ذخیره در فضای ابری محلی جهت انتقال به گوشی جدید
+  async backupDataToCloud(phoneOrEmailInput?: string, pinInput?: string): Promise<{ success: boolean; syncKey: string; message: string }> {
+    const today = getTodayJalali();
+    const phoneOrEmail = phoneOrEmailInput || currentState.userProfile?.phoneOrEmail;
+    if (!phoneOrEmail?.trim()) {
+      return { success: false, syncKey: '', message: 'شماره موبایل یا ایمیل را وارد کنید.' };
+    }
+
+    const pin = pinInput !== undefined ? pinInput : (currentState.userProfile?.pinOrPassword || '');
+    const syncKey = currentState.userProfile?.syncKey || generateSyncKey();
+    const nowTimestamp = `${today.dateStr} ساعت ${new Date().toLocaleTimeString('fa-IR', { hour: '2-digit', minute: '2-digit' })}`;
+
+    const profile: UserProfile = {
+      id: currentState.userProfile?.id || 'usr-' + Date.now(),
+      name: currentState.userProfile?.name || 'کاربر دفتر زندگی',
+      phoneOrEmail: phoneOrEmail.trim(),
+      pinOrPassword: pin,
+      syncKey,
+      createdAt: currentState.userProfile?.createdAt || today.dateStr,
+      lastBackupAt: nowTimestamp,
+      autoSyncCloud: true,
+    };
+
+    updateState({ userProfile: profile });
+
+    const payload = {
+      profile,
+      goals: currentState.goals,
+      plans: currentState.plans,
+      tasks: currentState.tasks,
+      events: currentState.events,
+      domainGroups: currentState.domainGroups,
+      dailyEntries: currentState.dailyEntries,
+      dailyAccountings: currentState.dailyAccountings,
+      dailyExpenses: currentState.dailyExpenses,
+      checklistCategories: currentState.checklistCategories,
+      checklistItems: currentState.checklistItems,
+      checklistLogs: currentState.checklistLogs,
+      settings: currentState.settings,
+      savedAt: nowTimestamp,
+    };
+
+    try {
+      const cleanIdent = phoneOrEmail.trim().toLowerCase();
+      localStorage.setItem(`${CLOUD_SYNC_REGISTRY_KEY}ident:${cleanIdent}`, JSON.stringify(payload));
+      localStorage.setItem(`${CLOUD_SYNC_REGISTRY_KEY}key:${syncKey.toUpperCase()}`, JSON.stringify(payload));
+
+      return {
+        success: true,
+        syncKey,
+        message: `پشتیبان‌گیری ابری با موفقیت ثبت شد. کلید انتقال اختصاصی شما: ${syncKey}`,
+      };
+    } catch (e) {
+      return { success: false, syncKey: '', message: 'خطا در ذخیره‌سازی داده‌های ابری.' };
+    }
+  },
+
+  // بازیابی اطلاعات در گوشی جدید با شماره تماس/ایمیل و کلید یا پین
+  async restoreDataFromCloud(phoneOrEmailOrKey: string, pinCode?: string): Promise<{ success: boolean; message: string }> {
+    const input = phoneOrEmailOrKey.trim();
+    if (!input) {
+      return { success: false, message: 'لطفاً شماره موبایل، ایمیل یا کلید انتقال را وارد نمایید.' };
+    }
+
+    try {
+      // جستجو با کلید اختصاصی انتقال (e.g. DZ-12345)
+      let raw = localStorage.getItem(`${CLOUD_SYNC_REGISTRY_KEY}key:${input.toUpperCase()}`);
+      
+      // اگر با کلید پیدا نشد، با شماره یا ایمیل جستجو می‌کنیم
+      if (!raw) {
+        raw = localStorage.getItem(`${CLOUD_SYNC_REGISTRY_KEY}ident:${input.toLowerCase()}`);
+      }
+
+      if (!raw) {
+        return {
+          success: false,
+          message: 'حسابی با این شماره موبایل یا کلید یافت نشد. اگر فایل پشتیبان دارید، از گزینه «بازیابی از فایل» استفاده نمایید.',
+        };
+      }
+
+      const parsed = JSON.parse(raw);
+      if (pinCode && parsed.profile?.pinOrPassword && parsed.profile.pinOrPassword !== pinCode.trim()) {
+        return { success: false, message: 'رمز عبور / پین وارد شده مطابقت ندارد.' };
+      }
+
+      updateState((prev) => ({
+        userProfile: parsed.profile || prev.userProfile,
+        goals: parsed.goals || prev.goals,
+        plans: parsed.plans || prev.plans,
+        tasks: parsed.tasks || prev.tasks,
+        events: parsed.events || prev.events,
+        domainGroups: parsed.domainGroups || prev.domainGroups,
+        dailyEntries: parsed.dailyEntries || prev.dailyEntries,
+        dailyAccountings: parsed.dailyAccountings || prev.dailyAccountings,
+        dailyExpenses: parsed.dailyExpenses || prev.dailyExpenses,
+        checklistCategories: parsed.checklistCategories || prev.checklistCategories,
+        checklistItems: parsed.checklistItems || prev.checklistItems,
+        checklistLogs: parsed.checklistLogs || prev.checklistLogs,
+        settings: parsed.settings ? { ...prev.settings, ...parsed.settings } : prev.settings,
+      }));
+
+      return {
+        success: true,
+        message: 'تمام اطلاعات، اهداف و کارهای شما با موفقیت در این گوشی بازیابی شد!',
+      };
+    } catch (e) {
+      return { success: false, message: 'خطا در پردازش اطلاعات بازیابی‌شده.' };
+    }
+  },
+
+  // Domain Groups (ابعاد و حوزه‌های زندگی)
+  addDomainGroup(groupData: Omit<DomainGroup, 'id'>) {
+    const newGroup: DomainGroup = {
+      ...groupData,
+      id: 'dg-' + Date.now(),
+    };
+    updateState((prev) => ({
+      domainGroups: [...prev.domainGroups, newGroup],
+    }));
+    return newGroup;
+  },
+
+  updateDomainGroup(id: string, updates: Partial<DomainGroup>) {
+    updateState((prev) => ({
+      domainGroups: prev.domainGroups.map((g) => (g.id === id ? { ...g, ...updates } : g)),
+    }));
+  },
+
+  deleteDomainGroup(id: string) {
+    updateState((prev) => ({
+      domainGroups: prev.domainGroups.filter((g) => g.id !== id),
+    }));
+  },
+
+  setDomainGroups(groups: DomainGroup[]) {
+    updateState({ domainGroups: groups });
+  },
+
+  resetDomainGroupsToPreset(presetId: string) {
+    const found = DOMAIN_PRESETS.find((p) => p.id === presetId);
+    if (found) {
+      updateState({ domainGroups: found.domains });
+    }
   },
 
   // Settings

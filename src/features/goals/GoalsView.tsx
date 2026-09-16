@@ -380,10 +380,10 @@ export const GoalsView: React.FC = () => {
         <div>
           <h2 className="text-xl sm:text-2xl font-extrabold text-stone-900 flex items-center gap-2.5">
             <Compass size={24} className="text-stone-800" />
-            <span>هدف‌گذاری و افق‌های زندگی</span>
+            <span>اهداف و دوره‌های آموزشی</span>
           </h2>
           <p className="text-xs sm:text-sm text-stone-500 mt-1">
-            اهداف به دو دسته کلی «سالانه» و «فصلی» تفکیک شده‌اند و ماه‌ها به صورت آبشاری باز و بسته می‌شوند.
+            دسته‌بندی اهداف بر اساس دوره‌های زمانی سالانه، فصلی و ماهانه.
           </p>
         </div>
 
@@ -394,7 +394,7 @@ export const GoalsView: React.FC = () => {
             title="برنامه‌ریزی دوره‌های ساعتی"
           >
             <GraduationCap size={15} className="text-amber-400" />
-            <span>طراح دوره‌های آموزشی</span>
+            <span>برنامه‌ریزی دوره جدید</span>
           </button>
 
           <button
@@ -421,7 +421,7 @@ export const GoalsView: React.FC = () => {
             }`}
           >
             <CalendarRange size={15} />
-            <span>اهداف فصلی (۴ فصل سال)</span>
+            <span>اهداف فصلی و ماهانه</span>
           </button>
 
           <button

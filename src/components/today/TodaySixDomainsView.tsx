@@ -1,9 +1,8 @@
 import React, { useState } from 'react';
 import { useStore, store } from '../../store/useStore';
-import { SIX_LIFE_DOMAINS } from '../../data/sixDomains';
 import { TaskItem } from '../tasks/TaskItem';
 import { toPersianDigits, getTodayJalali } from '../../lib/date/jalali';
-import { Task, Priority } from '../../types';
+import { Task, Priority, DomainGroup } from '../../types';
 import {
   Sparkles,
   Briefcase,
@@ -18,31 +17,57 @@ import {
   LayoutGrid,
   ChevronDown,
   ChevronUp,
+  Settings2,
+  Heart,
+  Dumbbell,
+  Code,
+  DollarSign,
+  Users,
+  Palette,
+  Music,
+  Home,
 } from 'lucide-react';
 
+const renderDomainIcon = (iconName: string, size = 18) => {
+  switch (iconName) {
+    case 'Briefcase':
+      return <Briefcase size={size} />;
+    case 'GraduationCap':
+      return <GraduationCap size={size} />;
+    case 'BookOpen':
+      return <BookOpen size={size} />;
+    case 'Activity':
+      return <Activity size={size} />;
+    case 'Dumbbell':
+      return <Dumbbell size={size} />;
+    case 'Heart':
+      return <Heart size={size} />;
+    case 'Sparkles':
+      return <Sparkles size={size} />;
+    case 'Coffee':
+      return <Coffee size={size} />;
+    case 'Code':
+      return <Code size={size} />;
+    case 'DollarSign':
+      return <DollarSign size={size} />;
+    case 'Users':
+      return <Users size={size} />;
+    case 'Palette':
+      return <Palette size={size} />;
+    case 'Music':
+      return <Music size={size} />;
+    case 'Home':
+      return <Home size={size} />;
+    default:
+      return <LayoutGrid size={size} />;
+  }
+};
+
 interface DomainCardProps {
-  domain: typeof SIX_LIFE_DOMAINS[0];
+  domain: DomainGroup;
   tasks: Task[];
   onAddTask: (title: string, priority: Priority) => void;
 }
-
-const getDomainIcon = (key: string, size = 18) => {
-  switch (key) {
-    case 'spiritual':
-      return <Sparkles size={size} />;
-    case 'career':
-      return <Briefcase size={size} />;
-    case 'study':
-      return <BookOpen size={size} />;
-    case 'growth':
-      return <GraduationCap size={size} />;
-    case 'fitness':
-      return <Activity size={size} />;
-    case 'daily':
-    default:
-      return <Coffee size={size} />;
-  }
-};
 
 const DomainCard: React.FC<DomainCardProps> = ({ domain, tasks, onAddTask }) => {
   const [isAdding, setIsAdding] = useState(false);
@@ -52,10 +77,11 @@ const DomainCard: React.FC<DomainCardProps> = ({ domain, tasks, onAddTask }) => 
 
   const pendingTasks = tasks.filter((t) => !t.completedAt);
   const completedTasks = tasks.filter((t) => !!t.completedAt);
+  const highPriorityTasks = pendingTasks.filter((t) => t.priority === 'urgent' || t.priority === 'high');
+  const regularTasks = pendingTasks.filter((t) => t.priority !== 'urgent' && t.priority !== 'high');
+
   const completionRate =
-    tasks.length > 0
-      ? Math.round((completedTasks.length / tasks.length) * 100)
-      : 0;
+    tasks.length > 0 ? Math.round((completedTasks.length / tasks.length) * 100) : 0;
 
   const handleQuickAdd = (e: React.FormEvent) => {
     e.preventDefault();
@@ -72,7 +98,7 @@ const DomainCard: React.FC<DomainCardProps> = ({ domain, tasks, onAddTask }) => 
       dir="rtl"
     >
       {/* سربرگ حوزه با خط رنگی و عنوان شاخص */}
-      <div className="p-4 sm:p-4.5 border-b border-stone-100 bg-stone-50/40 space-y-2">
+      <div className="p-4 border-b border-stone-100 bg-stone-50/40 space-y-2">
         <div className="flex items-center justify-between gap-2">
           {/* آیکون و عنوان حوزه */}
           <div className="flex items-center gap-2.5 min-w-0">
@@ -83,15 +109,17 @@ const DomainCard: React.FC<DomainCardProps> = ({ domain, tasks, onAddTask }) => 
                 color: domain.color,
               }}
             >
-              {getDomainIcon(domain.iconKey, 16)}
+              {renderDomainIcon(domain.icon, 16)}
             </div>
             <div className="min-w-0">
               <h4 className="text-sm sm:text-base font-extrabold text-stone-900 tracking-tight leading-tight truncate">
                 {domain.title}
               </h4>
-              <p className="text-[11px] text-stone-500 truncate mt-0.5">
-                {domain.subtitle}
-              </p>
+              {domain.subtitle && (
+                <p className="text-[11px] text-stone-500 truncate mt-0.5">
+                  {domain.subtitle}
+                </p>
+              )}
             </div>
           </div>
 
@@ -99,24 +127,22 @@ const DomainCard: React.FC<DomainCardProps> = ({ domain, tasks, onAddTask }) => 
           <button
             type="button"
             onClick={() => setIsAdding(!isAdding)}
-            className="w-7 h-7 rounded-lg text-stone-600 hover:text-stone-900 hover:bg-stone-200/70 border border-stone-200/80 flex items-center justify-center transition-colors shrink-0 cursor-pointer"
-            title={`افزودن کار جدید در ${domain.title}`}
+            className="p-1.5 text-stone-400 hover:text-stone-800 hover:bg-stone-200/60 rounded-xl transition-colors cursor-pointer shrink-0"
+            title="افزودن اقدام به این بعد"
           >
-            <Plus size={14} className="stroke-[2.5]" />
+            <Plus size={16} />
           </button>
         </div>
 
-        {/* نوار وضعیت پیشرفت کارهای این حوزه */}
+        {/* نوار پیشرفت انجام کارهای این حوزه */}
         <div className="space-y-1 pt-1">
-          <div className="flex items-center justify-between text-[10px] text-stone-500">
+          <div className="flex items-center justify-between text-[10px] font-medium text-stone-500">
             <span>
-              {toPersianDigits(completedTasks.length)} از {toPersianDigits(tasks.length)} اقدام امروز
+              {toPersianDigits(completedTasks.length)} از {toPersianDigits(tasks.length)} انجام شد
             </span>
-            <span className="font-bold font-mono text-stone-700">
-              {toPersianDigits(completionRate)}٪
-            </span>
+            <span className="font-mono">{toPersianDigits(completionRate)}٪</span>
           </div>
-          <div className="w-full h-1.5 bg-stone-100 rounded-full overflow-hidden">
+          <div className="w-full h-1.5 bg-stone-200/80 rounded-full overflow-hidden">
             <div
               className="h-full rounded-full transition-all duration-300"
               style={{
@@ -128,50 +154,45 @@ const DomainCard: React.FC<DomainCardProps> = ({ domain, tasks, onAddTask }) => 
         </div>
       </div>
 
-      {/* محتوای کارها */}
-      <div className="p-3 sm:p-3.5 space-y-2.5 flex-1 min-h-[140px] flex flex-col justify-start">
-        {/* فرم ثبت سریع کار درون‌کارتی */}
+      {/* محتوای کارهای حوزه */}
+      <div className="p-3.5 sm:p-4 space-y-3 flex-1 flex flex-col">
+        {/* فرم ثبت اقدام سریع در حوزه */}
         {isAdding && (
           <form
             onSubmit={handleQuickAdd}
-            className="p-2.5 bg-stone-50 border border-stone-200 rounded-xl space-y-2 animate-in fade-in duration-150"
+            className="bg-amber-50/70 border border-amber-300/80 rounded-xl p-2.5 space-y-2 animate-in fade-in duration-150"
           >
             <input
               type="text"
+              autoFocus
               value={quickTitle}
               onChange={(e) => setQuickTitle(e.target.value)}
-              placeholder={`یک اقدام مشخص برای ${domain.title}...`}
-              autoFocus
-              className="w-full px-2.5 py-1.5 bg-white border border-stone-300 focus:border-stone-800 rounded-lg text-xs font-medium text-stone-900 placeholder:text-stone-400 focus:outline-hidden"
+              placeholder={`اقدام جدید برای ${domain.title}...`}
+              className="w-full text-xs bg-white border border-amber-200 rounded-lg px-2.5 py-1.5 focus:outline-hidden focus:ring-1 focus:ring-amber-500"
             />
-            <div className="flex items-center justify-between gap-1.5 pt-0.5 text-[11px]">
-              <label className="flex items-center gap-1 text-stone-600 cursor-pointer select-none">
-                <input
-                  type="checkbox"
-                  checked={quickPriority === 'high'}
-                  onChange={(e) => setQuickPriority(e.target.checked ? 'high' : 'medium')}
-                  className="rounded text-rose-600 focus:ring-0 w-3 h-3"
-                />
-                <span className={quickPriority === 'high' ? 'font-bold text-rose-700' : ''}>
-                  اولویت مهم
-                </span>
-              </label>
+            <div className="flex items-center justify-between gap-1.5 pt-1">
+              <select
+                value={quickPriority}
+                onChange={(e) => setQuickPriority(e.target.value as Priority)}
+                className="text-[11px] bg-white border border-stone-200 rounded-lg px-2 py-1 text-stone-700"
+              >
+                <option value="low">اولویت عادی</option>
+                <option value="medium">اولویت متوسط</option>
+                <option value="high">اولویت بالا 🔥</option>
+                <option value="urgent">فوری و حیاتی ⚡</option>
+              </select>
 
               <div className="flex items-center gap-1">
                 <button
                   type="button"
-                  onClick={() => {
-                    setIsAdding(false);
-                    setQuickTitle('');
-                  }}
-                  className="px-2 py-1 text-stone-500 hover:text-stone-800 rounded text-[11px]"
+                  onClick={() => setIsAdding(false)}
+                  className="px-2 py-1 text-[11px] text-stone-500 hover:text-stone-800 cursor-pointer"
                 >
                   انصراف
                 </button>
                 <button
                   type="submit"
-                  disabled={!quickTitle.trim()}
-                  className="px-2.5 py-1 bg-stone-900 hover:bg-stone-800 text-stone-100 rounded-lg text-[11px] font-bold disabled:opacity-40"
+                  className="px-2.5 py-1 bg-amber-400 hover:bg-amber-300 text-stone-950 font-bold text-[11px] rounded-lg shadow-2xs transition-colors cursor-pointer"
                 >
                   ثبت
                 </button>
@@ -180,22 +201,48 @@ const DomainCard: React.FC<DomainCardProps> = ({ domain, tasks, onAddTask }) => 
           </form>
         )}
 
-        {/* لیست کارهای فعال */}
-        {pendingTasks.length > 0 ? (
-          <div className="space-y-2">
-            {pendingTasks.map((t) => (
-              <TaskItem key={t.id} task={t} />
-            ))}
+        {/* لیست کارهای با اولویت بالا */}
+        {highPriorityTasks.length > 0 && (
+          <div className="space-y-1.5">
+            <div className="text-[10px] font-bold text-rose-800 flex items-center gap-1 bg-rose-50/70 px-2 py-0.5 rounded-md w-fit">
+              <Flame size={11} className="fill-rose-600 text-rose-600" />
+              <span>فوری / بااهمیت</span>
+            </div>
+            <div className="space-y-1.5">
+              {highPriorityTasks.map((t) => (
+                <TaskItem key={t.id} task={t} />
+              ))}
+            </div>
           </div>
-        ) : !isAdding ? (
-          <div className="flex-1 flex flex-col items-center justify-center py-5 text-stone-400 text-center">
-            <span className="text-xs font-medium">اقدام فعالی در این حوزه نیست</span>
+        )}
+
+        {/* لیست کارهای در دست اقدام عادی */}
+        {regularTasks.length > 0 && (
+          <div className="space-y-1.5">
+            {highPriorityTasks.length > 0 && (
+              <div className="text-[10px] font-bold text-stone-500 flex items-center gap-1 pt-1">
+                <ListTodo size={11} />
+                <span>سایر اقدامات</span>
+              </div>
+            )}
+            <div className="space-y-1.5">
+              {regularTasks.map((t) => (
+                <TaskItem key={t.id} task={t} />
+              ))}
+            </div>
+          </div>
+        )}
+
+        {/* پیام خالی بودن */}
+        {tasks.length === 0 && !isAdding ? (
+          <div className="py-6 text-center text-stone-400 text-xs space-y-1.5 my-auto">
+            <p>کاری برای این بعد ثبت نشده است</p>
             <button
+              type="button"
               onClick={() => setIsAdding(true)}
-              className="text-[11px] text-amber-800 hover:underline mt-1 font-semibold flex items-center gap-1 cursor-pointer"
+              className="text-[11px] text-amber-700 font-bold hover:underline cursor-pointer"
             >
-              <Plus size={11} />
-              <span>افزودن اقدام</span>
+              + افزودن اقدام اولیه
             </button>
           </div>
         ) : null}
@@ -230,46 +277,54 @@ const DomainCard: React.FC<DomainCardProps> = ({ domain, tasks, onAddTask }) => 
 };
 
 export const TodaySixDomainsView: React.FC = () => {
-  const { tasks } = useStore();
+  const { tasks, domainGroups, selectedDate } = useStore();
   const today = getTodayJalali();
+  const activeDate = selectedDate || today.dateStr;
 
-  // فیلتر کارهای امروز
-  const todayTasks = tasks.filter((t) => t.dueDate === today.dateStr);
+  // فیلتر کارهای روز فعال
+  const todayTasks = tasks.filter((t) => t.dueDate === activeDate);
 
   const handleAddTaskForDomain = (domainId: string, title: string, priority: Priority) => {
     store.addTask({
       title,
       groupId: domainId,
-      dueDate: today.dateStr,
+      dueDate: activeDate,
       priority,
       subtasks: [],
     });
   };
 
-  // محاسبه آمار کلی ۶ حوزه
-  const totalTasks = todayTasks.length;
-  const completedCount = todayTasks.filter((t) => !!t.completedAt).length;
-
   return (
     <section className="space-y-4 sm:space-y-5" dir="rtl">
-      {/* سربرگ معرفی حالت ۶ حوزه زندگی */}
+      {/* سربرگ معرفی حالت ابعاد زندگی با دکمه شخصی‌سازی */}
       <div className="bg-white border border-stone-200/90 rounded-2xl p-4 sm:p-5 shadow-2xs flex flex-col sm:flex-row sm:items-center justify-between gap-3">
         <div className="space-y-1">
           <div className="flex items-center gap-2 text-xs font-bold text-amber-900">
             <LayoutGrid size={15} className="text-amber-700" />
-            <span>نظم ۶ حوزه بنیادین زندگی</span>
+            <span>ساماندهی بر مبنای ابعاد و حوزه‌های زندگی (اختیاری)</span>
           </div>
           <h3 className="text-base sm:text-lg font-extrabold text-stone-900">
-            سازماندهی متوازن تمام ابعاد روز در ۶ ستون معین
+            تمرکز متوازن بر ابعاد اختصاصی زندگی شما ({toPersianDigits(domainGroups.length)} حوزه فعال)
           </h3>
-          <p className="text-xs text-stone-500">
-            هر کار و وظیفه جایگاه مشخصی دارد؛ از تمرین و مطالعه تا شغل، معنویت، رشد فردی و کارهای روزمره.
+          <p className="text-xs text-stone-500 max-w-xl leading-relaxed">
+            این ساختار کاملاً اختیاری و قابل شخصی‌سازی است. می‌توانید حوزه‌های متناسب با کار، زندگی و اهداف خود را بسازید یا ویرایش کنید.
           </p>
         </div>
 
-        {/* کلید تغییر حالت یا افزودن کار کلی */}
-        <div className="flex items-center gap-2 self-start sm:self-auto shrink-0">
+        {/* کلیدهای شخصی‌سازی و اقدام جدید */}
+        <div className="flex items-center gap-2 self-start sm:self-auto shrink-0 flex-wrap">
           <button
+            type="button"
+            onClick={() => store.setManageDomainsModalOpen(true)}
+            className="px-3 py-1.5 bg-stone-100 hover:bg-stone-200/80 text-stone-800 font-bold rounded-xl text-xs flex items-center gap-1.5 border border-stone-200 transition-colors cursor-pointer"
+            title="افزودن، ویرایش یا تغییر ابعاد زندگی"
+          >
+            <Settings2 size={14} className="text-amber-700" />
+            <span>شخصی‌سازی ابعاد</span>
+          </button>
+
+          <button
+            type="button"
             onClick={() => store.setQuickAddModalOpen(true, 'task')}
             className="px-3.5 py-1.5 bg-amber-400 hover:bg-amber-300 text-stone-950 font-bold rounded-xl text-xs flex items-center gap-1.5 shadow-2xs transition-colors cursor-pointer"
           >
@@ -279,25 +334,27 @@ export const TodaySixDomainsView: React.FC = () => {
         </div>
       </div>
 
-      {/* شبکه ماتریسی ۶ حوزه */}
+      {/* شبکه کارت‌های ابعاد زندگی تعریف‌شده توسط کاربر */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3.5 sm:gap-4">
-        {SIX_LIFE_DOMAINS.map((domain) => {
-          // کارهای متعلق به این حوزه (بر اساس تطبیق شناسه یا دسته‌بندی معادل)
+        {domainGroups.map((group) => {
+          // کارهای متعلق به این حوزه
           const domainTasks = todayTasks.filter((t) => {
-            if (t.groupId === domain.id) return true;
-            // نگاشت کارهای با شناسه‌های قدیمی پیش‌فرض
-            if (domain.id === 'career' && t.groupId === 'work') return true;
-            if (domain.id === 'study' && (t.groupId === 'uni' || t.groupId === 'study')) return true;
-            if (domain.id === 'daily' && t.groupId === 'personal') return true;
+            if (t.groupId === group.id) return true;
+            // نگاشت کارهای با شناسه‌های تطبیقی
+            if (group.id === 'career' && t.groupId === 'work') return true;
+            if (group.id === 'work' && t.groupId === 'career') return true;
+            if (group.id === 'study' && (t.groupId === 'uni' || t.groupId === 'study')) return true;
+            if (group.id === 'growth' && t.groupId === 'skills') return true;
+            if (group.id === 'daily' && t.groupId === 'personal') return true;
             return false;
           });
 
           return (
             <DomainCard
-              key={domain.id}
-              domain={domain}
+              key={group.id}
+              domain={group}
               tasks={domainTasks}
-              onAddTask={(title, priority) => handleAddTaskForDomain(domain.id, title, priority)}
+              onAddTask={(title, priority) => handleAddTaskForDomain(group.id, title, priority)}
             />
           );
         })}

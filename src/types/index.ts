@@ -63,6 +63,9 @@ export interface Task {
   goalId?: string;
   dueDate: string; // فرمت 'YYYY/MM/DD' به هجری شمسی
   dueTime?: string; // فرمت 'HH:MM'
+  hasAlarm?: boolean; // فعال بودن زنگ یا یادآوری
+  alarmMinutesBefore?: number; // چند دقیقه قبل (۰ = سر وقت، ۱۵، ۳۰)
+  alarmSound?: boolean; // پخش آلارم صوتی
   priority: Priority;
   completedAt?: string; // تاریخ و زمان تکمیل
   recurrence?: Recurrence;
@@ -98,6 +101,8 @@ export interface DomainGroup {
   title: string;
   icon: string;
   color: string;
+  subtitle?: string;
+  description?: string;
 }
 
 export interface HolidayOccasion {
@@ -148,10 +153,19 @@ export interface DailyExpense {
   createdAt: string;
 }
 
-// آیتم چک‌لیست ثابت روزانه در ۶ حوزه
+// دسته‌بندی قابل ویرایش برای چک‌لیست روزانه
+export interface DailyChecklistCategory {
+  id: string;
+  title: string;
+  color: string;
+  bgLight: string;
+  iconName?: string;
+}
+
+// آیتم چک‌لیست ثابت روزانه
 export interface DailyChecklistItem {
   id: string;
-  domainId: string; // spiritual, career, study, skills, exercise, general
+  domainId: string; // شناسه دسته‌بندی
   title: string;
   description?: string;
 }
@@ -160,6 +174,19 @@ export interface DailyChecklistItem {
 export interface DailyChecklistLog {
   date: string; // 'YYYY/MM/DD'
   completedItemIds: string[];
+}
+
+// پروفایل شخصی کاربر و همگام‌سازی ابری برای انتقال به گوشی جدید
+export interface UserProfile {
+  id: string;
+  name: string;
+  phoneOrEmail: string;
+  pinOrPassword?: string;
+  avatar?: string;
+  syncKey: string; // کلید اختصاصی انتقال به گوشی جدید (مثلاً DZ-92841)
+  createdAt: string;
+  lastBackupAt?: string;
+  autoSyncCloud?: boolean;
 }
 
 export interface UserSettings {

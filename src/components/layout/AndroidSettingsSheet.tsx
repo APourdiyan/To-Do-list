@@ -77,10 +77,10 @@ export const AndroidSettingsSheet: React.FC<AndroidSettingsSheetProps> = ({
               </div>
               <div className="space-y-0.5">
                 <div className="text-xs sm:text-sm font-bold text-stone-900">
-                  ساماندهی ۶ حوزه بنیادین زندگی
+                  نمای دسته‌بندی‌شده بر اساس حوزه‌ها
                 </div>
                 <div className="text-[11px] text-stone-500 leading-tight">
-                  تفکیک متوازن کارهای روز در ۶ ستون معین (شغل، معنویت، مطالعه...)
+                  نمایش کارهای روز به تفکیک حوزه‌های کاری و شخصی
                 </div>
               </div>
             </div>
@@ -143,10 +143,10 @@ export const AndroidSettingsSheet: React.FC<AndroidSettingsSheetProps> = ({
               </div>
               <div className="space-y-0.5">
                 <div className="text-xs sm:text-sm font-bold text-stone-900">
-                  راهنمای اصول و شیوه کار دفتر
+                  راهنمای استفاده از دفتر
                 </div>
                 <div className="text-[11px] text-stone-500 leading-tight">
-                  قوانین وضوح ذهن، نیت‌گذاری، ثبت دوره‌ها و تخلیه ذهن
+                  اصول برنامه‌ریزی روزانه، اهداف و سازماندهی دوره‌ها
                 </div>
               </div>
             </div>

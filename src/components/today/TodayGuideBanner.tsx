@@ -35,7 +35,7 @@ export const TodayGuideBanner: React.FC<TodayGuideBannerProps> = ({ onOpenPhilos
           <BookOpen size={14} />
         </div>
         <h4 className="text-xs sm:text-sm font-bold text-stone-900">
-          آئین ساده دفتر شخصی: ۳ گام شفاف برای شروع امروز
+          شروع روز در ۳ گام ساده
         </h4>
       </div>
 
@@ -45,10 +45,10 @@ export const TodayGuideBanner: React.FC<TodayGuideBannerProps> = ({ onOpenPhilos
             <span className="w-4 h-4 rounded-full bg-amber-100 text-amber-800 flex items-center justify-center text-[10px]">
               ۱
             </span>
-            <span>نیت و تمرکز روز</span>
+            <span>تمرکز اصلی امروز</span>
           </div>
           <p className="text-stone-600 leading-relaxed text-[11px]">
-            یک جمله بنویس که امروز انرژی و فکرت دقیقاً روی چه هدف یا کاری متمرکز است.
+            یک جمله کوتاه بنویس که امروز انرژی و فکرت روی چه اولویتی متمرکز است.
           </p>
         </div>
 
@@ -57,10 +57,10 @@ export const TodayGuideBanner: React.FC<TodayGuideBannerProps> = ({ onOpenPhilos
             <span className="w-4 h-4 rounded-full bg-amber-100 text-amber-800 flex items-center justify-center text-[10px]">
               ۲
             </span>
-            <span>اقدامات مهم امروز</span>
+            <span>کارهای مهم امروز</span>
           </div>
           <p className="text-stone-600 leading-relaxed text-[11px]">
-            کارهای امروزت را مستقیم در کادر پایین بنویس و با انجام هرکدام خط بزن.
+            کارهای امروزت را مستقیم در کادر پایین بنویس و پس از انجام تیک بزن.
           </p>
         </div>
 
@@ -69,10 +69,10 @@ export const TodayGuideBanner: React.FC<TodayGuideBannerProps> = ({ onOpenPhilos
             <span className="w-4 h-4 rounded-full bg-amber-100 text-amber-800 flex items-center justify-center text-[10px]">
               ۳
             </span>
-            <span>حاشیه و یادداشت آزاد</span>
+            <span>یادداشت و ایده‌های آزاد</span>
           </div>
           <p className="text-stone-600 leading-relaxed text-[11px]">
-            افکار، ایده‌ها و حس‌وحالت را در دفترچه پایین روزانه تخلیه و ثبت کن.
+            نکات، ایده‌ها یا پیگیری‌های روزانه را در یادداشت روز بنویس.
           </p>
         </div>
       </div>
@@ -80,13 +80,13 @@ export const TodayGuideBanner: React.FC<TodayGuideBannerProps> = ({ onOpenPhilos
       {onOpenPhilosophyModal && (
         <div className="mt-3 pt-2.5 border-t border-amber-200/50 flex items-center justify-between text-[11px]">
           <span className="text-stone-500">
-            برای درک کامل سازوکار بخش‌های گاه‌شمار و اهداف:
+            برای راهنمایی بیشتر درباره اهداف و بخش‌های مختلف:
           </span>
           <button
             onClick={onOpenPhilosophyModal}
             className="font-bold text-amber-900 hover:text-amber-950 underline underline-offset-4"
           >
-            مطالعه راهنمای کامل دفتر زندگی
+            راهنمای استفاده از بخش‌های برنامه
           </button>
         </div>
       )}

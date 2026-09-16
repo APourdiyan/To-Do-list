@@ -11,6 +11,7 @@ import {
   Settings,
   Scale,
   BookCheck,
+  User,
 } from 'lucide-react';
 import { ActiveTab } from '../../types';
 import { AndroidSettingsSheet } from './AndroidSettingsSheet';
@@ -58,10 +59,10 @@ export const AndroidBottomNav: React.FC = () => {
                 }`}
               >
                 <Compass size={20} className={activeTab === 'goals' ? 'text-stone-950' : 'text-stone-600'} />
-                <span>اهداف و مسیرها</span>
+                <span>اهداف و دوره‌ها</span>
               </button>
 
-              {/* کلید چک‌لیست ۶ حوزه */}
+              {/* کلید چک‌لیست روزانه */}
               <button
                 onClick={() => {
                   store.setChecklistDrawerOpen(true);
@@ -70,10 +71,10 @@ export const AndroidBottomNav: React.FC = () => {
                 className="p-3 rounded-2xl flex flex-col items-center gap-1.5 border text-xs font-bold bg-stone-50 hover:bg-stone-100 text-stone-700 border-stone-200 transition-all cursor-pointer"
               >
                 <BookCheck size={20} className="text-emerald-700" />
-                <span>چک‌لیست ۶ حوزه</span>
+                <span>چک‌لیست روزانه</span>
               </button>
 
-              {/* کلید محاسبه اعمال و مخارج */}
+              {/* کلید مرور روز و هزینه‌ها */}
               <button
                 onClick={() => {
                   store.setAccountingModalOpen(true);
@@ -82,7 +83,19 @@ export const AndroidBottomNav: React.FC = () => {
                 className="p-3 rounded-2xl flex flex-col items-center gap-1.5 border text-xs font-bold bg-stone-50 hover:bg-stone-100 text-stone-700 border-stone-200 transition-all cursor-pointer"
               >
                 <Scale size={20} className="text-amber-700" />
-                <span>محاسبه و مخارج</span>
+                <span>مرور روز و هزینه‌ها</span>
+              </button>
+
+              {/* کلید پروفایل کاربری و ذخیره ابری */}
+              <button
+                onClick={() => {
+                  store.setProfileModalOpen(true);
+                  setMoreMenuOpen(false);
+                }}
+                className="p-3 rounded-2xl flex flex-col items-center gap-1.5 border text-xs font-bold bg-stone-50 hover:bg-stone-100 text-stone-700 border-stone-200 transition-all cursor-pointer"
+              >
+                <User size={20} className="text-stone-800" />
+                <span>پروفایل و ذخیره ابری</span>
               </button>
 
               {/* کلید تنظیمات */}
@@ -94,7 +107,7 @@ export const AndroidBottomNav: React.FC = () => {
                 className="p-3 rounded-2xl flex flex-col items-center gap-1.5 border text-xs font-bold bg-stone-50 hover:bg-stone-100 text-stone-700 border-stone-200 transition-all cursor-pointer"
               >
                 <Settings size={20} className="text-stone-700" />
-                <span>تنظیمات دفتر</span>
+                <span>تنظیمات</span>
               </button>
             </div>
           </div>

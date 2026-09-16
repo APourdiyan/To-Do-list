@@ -19,6 +19,9 @@ import {
   Compass,
   FileText,
   Flame,
+  Bell,
+  BellRing,
+  BellOff,
 } from 'lucide-react';
 import { SIX_LIFE_DOMAINS } from '../../data/sixDomains';
 
@@ -83,14 +86,14 @@ export const TaskItem: React.FC<TaskItemProps> = ({ task, onEdit, compact = fals
             <button
               type="button"
               onClick={handleToggle}
-              className={`w-5 h-5 mt-0.5 rounded-md shrink-0 flex items-center justify-center border transition-all ${
+              className={`w-5.5 h-5.5 mt-0.5 rounded-lg shrink-0 flex items-center justify-center border transition-all duration-150 active:scale-90 cursor-pointer ${
                 isCompleted
-                  ? 'bg-emerald-700 border-emerald-700 text-white shadow-2xs'
-                  : 'border-stone-300 hover:border-stone-600 bg-stone-50 hover:bg-white'
+                  ? 'bg-emerald-700 border-emerald-700 text-white shadow-xs scale-100'
+                  : 'border-stone-300 hover:border-emerald-600 hover:bg-emerald-50/50 bg-stone-50'
               }`}
               title={isCompleted ? 'علامت‌گذاری به عنوان انجام‌نشده' : 'علامت‌گذاری به عنوان انجام‌شده'}
             >
-              {isCompleted && <Check size={12} className="stroke-[3]" />}
+              {isCompleted && <Check size={13} className="stroke-[3] animate-in zoom-in-50 duration-150" />}
             </button>
 
             <div className="flex-1 min-w-0">
@@ -213,9 +216,17 @@ export const TaskItem: React.FC<TaskItemProps> = ({ task, onEdit, compact = fals
 
             {/* ساعت موعد */}
             {task.dueTime && (
-              <span className="flex items-center gap-0.5 text-[10px] font-mono text-amber-900 bg-amber-50 px-1.5 py-0.2 rounded border border-amber-200">
+              <span className="flex items-center gap-0.5 text-[10px] font-mono text-amber-900 bg-amber-50 px-1.5 py-0.5 rounded border border-amber-200">
                 <Clock size={10} />
                 <span>{task.dueTime}</span>
+              </span>
+            )}
+
+            {/* نشان آلارم فعال */}
+            {task.hasAlarm && (
+              <span className="flex items-center gap-1 text-[10px] font-mono text-amber-950 bg-amber-100/90 px-1.5 py-0.5 rounded-md border border-amber-300 shadow-2xs">
+                <BellRing size={10} className="text-amber-700 animate-pulse" />
+                <span>آلارم {task.alarmMinutesBefore ? `(${toPersianDigits(task.alarmMinutesBefore)}د قبل)` : 'فعال'}</span>
               </span>
             )}
 
@@ -271,6 +282,44 @@ export const TaskItem: React.FC<TaskItemProps> = ({ task, onEdit, compact = fals
               </span>
             </div>
           )}
+
+          {/* تنظیمات آلارم و ساعت انجام این کار */}
+          <div className="flex flex-wrap items-center justify-between gap-2 p-2.5 bg-white rounded-xl border border-stone-200/80">
+            <div className="flex items-center gap-2">
+              <div className={`p-1.5 rounded-lg ${task.hasAlarm ? 'bg-amber-100 text-amber-800' : 'bg-stone-100 text-stone-400'}`}>
+                {task.hasAlarm ? <BellRing size={14} /> : <BellOff size={14} />}
+              </div>
+              <div>
+                <span className="text-xs font-bold text-stone-800 block">
+                  {task.hasAlarm ? 'آلارم و یادآوری فعال است' : 'آلارم غیرفعال است'}
+                </span>
+                <span className="text-[10px] text-stone-500 font-mono">
+                  {task.dueTime ? `ساعت انجام: ${task.dueTime}` : 'بدون ساعت مشخص'}
+                  {task.hasAlarm && task.alarmMinutesBefore ? ` • ${toPersianDigits(task.alarmMinutesBefore)} دقیقه قبل` : ''}
+                </span>
+              </div>
+            </div>
+
+            <div className="flex items-center gap-1.5">
+              <button
+                type="button"
+                onClick={() => {
+                  const willEnable = !task.hasAlarm;
+                  store.updateTask(task.id, {
+                    hasAlarm: willEnable,
+                    dueTime: willEnable && !task.dueTime ? '۱۰:۰۰' : task.dueTime,
+                  });
+                }}
+                className={`px-2.5 py-1 rounded-lg text-xs font-bold transition-colors cursor-pointer border ${
+                  task.hasAlarm
+                    ? 'bg-amber-50 text-amber-900 border-amber-300 hover:bg-amber-100'
+                    : 'bg-stone-50 text-stone-700 border-stone-200 hover:bg-stone-100'
+                }`}
+              >
+                {task.hasAlarm ? 'غیرفعال‌سازی زنگ' : 'فعال‌سازی زنگ آلارم'}
+              </button>
+            </div>
+          </div>
 
           {/* زیروظایف */}
           <div className="space-y-2 pt-1">

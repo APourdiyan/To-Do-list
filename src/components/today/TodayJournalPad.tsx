@@ -48,13 +48,13 @@ export const TodayJournalPad: React.FC = () => {
           </div>
           <div>
             <h3 className="text-xs sm:text-sm font-bold text-stone-900 flex items-center gap-2">
-              <span>حاشیه و یادداشت آزاد امروز</span>
+              <span>یادداشت روزانه</span>
               <span className="text-[10px] font-normal text-stone-400">
-                (تخلیه ذهن، ایده، گزارش شبانه)
+                (نکات، ایده‌ها و یادداشت‌های امروز)
               </span>
             </h3>
             <p className="text-[11px] text-stone-500">
-              مثل حاشیه سفید سررسید شخصی‌ات؛ هرچیزی که تسک نیست ولی می‌خواهی ثبت بماند.
+              فضایی برای نوشتن نکات، ایده‌ها و خلاصه اتفاقات روز.
             </p>
           </div>
         </div>
@@ -83,7 +83,7 @@ export const TodayJournalPad: React.FC = () => {
           value={text}
           onChange={handleChange}
           rows={4}
-          placeholder="افکار پراکنده امروز، نکات جلسات، آموخته‌های روز، یا حس و حالی که می‌خواهی در تاریخ امروز برایت بماند بنویس..."
+          placeholder="نکات، آموخته‌ها، خلاصه جلسات یا یادداشت‌های امروز را اینجا بنویسید..."
           className="w-full bg-transparent p-3 text-xs sm:text-sm leading-relaxed text-stone-800 placeholder:text-stone-400 focus:outline-hidden resize-y min-h-[100px]"
           style={{
             backgroundImage:
@@ -95,7 +95,7 @@ export const TodayJournalPad: React.FC = () => {
       </div>
 
       <div className="flex items-center justify-between text-[11px] text-stone-400 pt-1">
-        <span>ثبت‌شده برای گاه‌شمار امروز: {formatJalaliDate(today.dateStr, { showYear: false })}</span>
+        <span>یادداشت تاریخ: {formatJalaliDate(today.dateStr, { showYear: false })}</span>
         <span>ذخیره‌سازی خودکار در مرورگر</span>
       </div>
     </section>

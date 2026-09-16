@@ -159,7 +159,7 @@ export const DailyAccountingModal: React.FC<DailyAccountingModalProps> = ({
             </div>
             <div>
               <h2 className="text-base font-extrabold text-stone-900">
-                {activeSubTab === 'accounting' ? 'محاسبه اعمال روزانه' : 'محاسبه خرید و مخارج'}
+                {activeSubTab === 'accounting' ? 'مرور و ارزیابی روز' : 'هزینه‌ها و مخارج روزانه'}
               </h2>
               <p className="text-xs text-stone-500">{formattedDate}</p>
             </div>
@@ -173,7 +173,7 @@ export const DailyAccountingModal: React.FC<DailyAccountingModalProps> = ({
           </button>
         </div>
 
-        {/* سوییچ بین محاسبه اعمال و مخارج */}
+        {/* سوییچ بین ارزیابی روز و مخارج */}
         <div className="flex border-b border-stone-100 px-4 sm:px-5 pt-3 bg-stone-50/50 gap-2">
           <button
             onClick={() => setActiveSubTab('accounting')}
@@ -184,7 +184,7 @@ export const DailyAccountingModal: React.FC<DailyAccountingModalProps> = ({
             }`}
           >
             <Scale size={15} />
-            <span>محاسبه اعمال و بازتاب نفس</span>
+            <span>ارزیابی روز و عملکرد</span>
           </button>
 
           <button
@@ -196,7 +196,7 @@ export const DailyAccountingModal: React.FC<DailyAccountingModalProps> = ({
             }`}
           >
             <Receipt size={15} />
-            <span>خرید و مخارج روزانه</span>
+            <span>هزینه‌ها و مخارج</span>
             {todayTotal > 0 && (
               <span className="text-[10px] bg-amber-100 text-amber-900 px-1.5 py-0.2 rounded-full font-bold">
                 {toPersianDigits(todayTotal.toLocaleString('fa-IR'))}
@@ -209,12 +209,12 @@ export const DailyAccountingModal: React.FC<DailyAccountingModalProps> = ({
         <div className="flex-1 overflow-y-auto p-4 sm:p-5 space-y-5">
           {activeSubTab === 'accounting' ? (
             <>
-              {/* بخش کارهای نیک و توفیقات (+) */}
+              {/* بخش کارهای مثبت و دستاوردها (+) */}
               <div className="bg-emerald-50/50 border border-emerald-100 rounded-2xl p-4">
                 <div className="flex items-center justify-between mb-2.5">
                   <div className="flex items-center gap-1.5 text-emerald-900 font-bold text-xs">
                     <CheckCircle2 size={16} className="text-emerald-600" />
-                    <span>کارهای شایسته و توفیقات امروز (+)</span>
+                    <span>دستاوردهای مثبت و کارهای خوب (+)</span>
                   </div>
                   <span className="text-[11px] font-bold text-emerald-800 bg-emerald-100/80 px-2 py-0.5 rounded-full">
                     {toPersianDigits(accounting.goodDeeds.length)} مورد
@@ -227,7 +227,7 @@ export const DailyAccountingModal: React.FC<DailyAccountingModalProps> = ({
                     type="text"
                     value={newGoodDeed}
                     onChange={(e) => setNewGoodDeed(e.target.value)}
-                    placeholder="مثال: پایبندی به برنامه، صدقه، صبر در برابر عصبانیت..."
+                    placeholder="مثال: تمرکز کامل روی کار، پیاده‌روی، تماس با خانواده..."
                     className="flex-1 text-xs px-3 py-2 bg-white rounded-xl border border-emerald-200 focus:outline-none focus:ring-2 focus:ring-emerald-400"
                   />
                   <button
@@ -259,17 +259,17 @@ export const DailyAccountingModal: React.FC<DailyAccountingModalProps> = ({
                   </ul>
                 ) : (
                   <p className="text-[11px] text-stone-400 text-center py-2">
-                    هنوز کار خیری برای امروز ثبت نکرده‌اید.
+                    هنوز موردی برای کارهای مثبت امروز ثبت نشده است.
                   </p>
                 )}
               </div>
 
-              {/* بخش موارد نیازمند اصلاح و لغزش‌ها (-) */}
+              {/* بخش چالش‌ها و نکات نیازمند بهبود (-) */}
               <div className="bg-rose-50/50 border border-rose-100 rounded-2xl p-4">
                 <div className="flex items-center justify-between mb-2.5">
                   <div className="flex items-center gap-1.5 text-rose-900 font-bold text-xs">
                     <AlertCircle size={16} className="text-rose-600" />
-                    <span>موارد نیازمند اصلاح و جبران (-)</span>
+                    <span>چالش‌ها و نکات نیازمند بهبود (-)</span>
                   </div>
                   <span className="text-[11px] font-bold text-rose-800 bg-rose-100/80 px-2 py-0.5 rounded-full">
                     {toPersianDigits(accounting.badDeeds.length)} مورد
@@ -282,7 +282,7 @@ export const DailyAccountingModal: React.FC<DailyAccountingModalProps> = ({
                     type="text"
                     value={newBadDeed}
                     onChange={(e) => setNewBadDeed(e.target.value)}
-                    placeholder="مثال: اتلاف وقت در فضای مجازی، بدقولی، فراموشی ورزش..."
+                    placeholder="مثال: حواس‌پرتی در زمان کار، کم‌خوابی، تعویق انداختن کارها..."
                     className="flex-1 text-xs px-3 py-2 bg-white rounded-xl border border-rose-200 focus:outline-none focus:ring-2 focus:ring-rose-400"
                   />
                   <button
@@ -323,7 +323,7 @@ export const DailyAccountingModal: React.FC<DailyAccountingModalProps> = ({
               <div className="p-3.5 bg-stone-50 rounded-2xl border border-stone-200/80">
                 <div className="flex items-center justify-between mb-2">
                   <span className="text-xs font-bold text-stone-800">
-                    نمره ارزیابی و رضایت از خود امروز:
+                    میزان رضایت از عملکرد امروز:
                   </span>
                   <span className="text-sm font-black text-amber-700">
                     {toPersianDigits(accounting.satisfactionScore || 7)} از ۱۰
@@ -351,17 +351,17 @@ export const DailyAccountingModal: React.FC<DailyAccountingModalProps> = ({
                 </div>
               </div>
 
-              {/* بازتاب و پیام امروز برای فردا */}
+              {/* یادداشت و آمادگی برای فردا */}
               <div>
                 <label className="block text-xs font-bold text-stone-700 mb-1.5">
-                  نتیجه‌گیری و عزم فردا (تعهد شخصی):
+                  یادداشت و آمادگی برای فردا:
                 </label>
                 <textarea
                   value={reflectionNote}
                   onChange={(e) => setReflectionNote(e.target.value)}
                   onBlur={handleSaveReflection}
                   rows={2}
-                  placeholder="مهم‌ترین درسی که از عملکرد امروزم گرفتم چیست و فردا چه چیزی را بهتر خواهم کرد؟"
+                  placeholder="نکته مهم امروز چه بود و فردا چه چیزی را بهتر انجام می‌دهم؟"
                   className="w-full text-xs p-3 bg-stone-50 rounded-2xl border border-stone-200 focus:outline-none focus:ring-2 focus:ring-amber-400"
                 />
               </div>

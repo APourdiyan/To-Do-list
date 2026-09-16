@@ -19,8 +19,8 @@ const MOODS: { id: MoodType; label: string; icon: React.ReactNode; activeColor: 
   { id: 'focused', label: 'متمرکز', icon: <Sparkles size={12} />, activeColor: 'bg-emerald-900 text-emerald-100 border-emerald-800' },
   { id: 'calm', label: 'آرام', icon: <Feather size={12} />, activeColor: 'bg-teal-900 text-teal-100 border-teal-800' },
   { id: 'energetic', label: 'پرانرژی', icon: <Zap size={12} />, activeColor: 'bg-amber-900 text-amber-100 border-amber-800' },
-  { id: 'reflective', label: 'متأمل', icon: <Coffee size={12} />, activeColor: 'bg-stone-800 text-stone-200 border-stone-700' },
-  { id: 'tired', label: 'آرامش/مدارا', icon: <Moon size={12} />, activeColor: 'bg-rose-900 text-rose-100 border-rose-800' },
+  { id: 'reflective', label: 'در حال فکر', icon: <Coffee size={12} />, activeColor: 'bg-stone-800 text-stone-200 border-stone-700' },
+  { id: 'tired', label: 'خسته یا کم‌انرژی', icon: <Moon size={12} />, activeColor: 'bg-stone-700 text-stone-100 border-stone-600' },
 ];
 
 export const TodayFocusBar: React.FC = () => {

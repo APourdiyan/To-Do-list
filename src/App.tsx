@@ -11,6 +11,10 @@ import { JournalPhilosophyModal } from './components/common/JournalPhilosophyMod
 import { AndroidBottomNav } from './components/layout/AndroidBottomNav';
 import { DailyChecklistDrawer } from './components/checklist/DailyChecklistDrawer';
 import { DailyAccountingModal } from './components/accounting/DailyAccountingModal';
+import { ManageDomainsModal } from './components/domains/ManageDomainsModal';
+import { UserProfileModal } from './components/profile/UserProfileModal';
+import { AlarmBannerToast } from './components/common/AlarmBannerToast';
+import { useAlarmWatcher } from './lib/alarm/useAlarmWatcher';
 
 export default function App() {
   const {
@@ -20,7 +24,11 @@ export default function App() {
     philosophyModalOpen,
     checklistDrawerOpen,
     accountingModalOpen,
+    manageDomainsModalOpen,
+    profileModalOpen,
   } = useStore();
+
+  const { activeAlert, dismissAlert } = useAlarmWatcher();
 
   // پایش ژست لمسی سوایپ به راست (Swipe Right) در صفحات موبایل برای باز کردن چک‌لیست روزانه
   const touchStartRef = useRef<{ x: number; y: number } | null>(null);
@@ -86,12 +94,14 @@ export default function App() {
         if (philosophyModalOpen) store.setPhilosophyModalOpen(false);
         if (checklistDrawerOpen) store.setChecklistDrawerOpen(false);
         if (accountingModalOpen) store.setAccountingModalOpen(false);
+        if (manageDomainsModalOpen) store.setManageDomainsModalOpen(false);
+        if (profileModalOpen) store.setProfileModalOpen(false);
       }
     };
 
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [searchModalOpen, quickAddModalOpen, philosophyModalOpen, checklistDrawerOpen, accountingModalOpen]);
+  }, [searchModalOpen, quickAddModalOpen, philosophyModalOpen, checklistDrawerOpen, accountingModalOpen, manageDomainsModalOpen, profileModalOpen]);
 
   return (
     <div
@@ -100,6 +110,9 @@ export default function App() {
       onTouchStart={handleTouchStart}
       onTouchEnd={handleTouchEnd}
     >
+      {/* اعلان زنگ آلارم زنده */}
+      <AlarmBannerToast alert={activeAlert} onDismiss={dismissAlert} />
+
       {/* سربرگ (فقط در دسکتاپ md:block و در موبایل/اندروید طبق درخواست کاملاً حذف شده است) */}
       <Header />
 
@@ -126,9 +139,16 @@ export default function App() {
         onClose={() => store.setAccountingModalOpen(false)}
       />
 
+      {/* مدال پروفایل کاربری و پشتیبان‌گیری ابری */}
+      <UserProfileModal
+        isOpen={profileModalOpen}
+        onClose={() => store.setProfileModalOpen(false)}
+      />
+
       {/* مدال‌های سراسری */}
       <QuickAddModal />
       <GlobalSearchModal />
+      <ManageDomainsModal />
       <JournalPhilosophyModal
         isOpen={philosophyModalOpen}
         onClose={() => store.setPhilosophyModalOpen(false)}

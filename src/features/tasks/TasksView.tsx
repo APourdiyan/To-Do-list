@@ -35,7 +35,7 @@ export const TasksView: React.FC = () => {
   const { tasks, goals, domainGroups, settings } = useStore();
   const today = getTodayJalali();
 
-  const availableDomains = settings.lifeDomainsMode ? SIX_LIFE_DOMAINS : domainGroups;
+  const availableDomains = domainGroups;
 
   const [activeFilter, setActiveFilter] = useState<TaskFilterType>('smart');
   const [selectedGroupId, setSelectedGroupId] = useState<string>('all');
@@ -142,34 +142,58 @@ export const TasksView: React.FC = () => {
 
       if (task.goalId) {
         const goal = goals.find((g) => g.id === task.goalId);
-        const groupKey = `goal-${task.goalId}`;
-        const title = goal?.title || matchedCourseTitle || 'دوره آموزشی';
+        // اگر هدف دوره باشد یا عنوان تسک جلسه باشد
+        if (goal?.courseDetails || matchedCourseTitle) {
+          const groupKey = `goal-${task.goalId}`;
+          const title = goal?.title || matchedCourseTitle || 'دوره آموزشی';
 
-        if (!courseMap.has(groupKey)) {
-          courseMap.set(groupKey, { title, goalId: task.goalId, tasks: [] });
+          if (!courseMap.has(groupKey)) {
+            courseMap.set(groupKey, { title, goalId: task.goalId, tasks: [] });
+          }
+          courseMap.get(groupKey)!.tasks.push(task);
+          return;
         }
-        courseMap.get(groupKey)!.tasks.push(task);
       } else if (matchedCourseTitle) {
         const groupKey = `title-${matchedCourseTitle}`;
         if (!courseMap.has(groupKey)) {
           courseMap.set(groupKey, { title: matchedCourseTitle, tasks: [] });
         }
         courseMap.get(groupKey)!.tasks.push(task);
-      } else {
-        regular.push(task);
+        return;
       }
+      regular.push(task);
     });
 
     const multiCourseGroups: { key: string; title: string; goalId?: string; tasks: Task[] }[] = [];
     courseMap.forEach((val, key) => {
-      if (val.tasks.length > 1) {
-        multiCourseGroups.push({ key, ...val });
-      } else {
-        regular.push(...val.tasks);
-      }
+      multiCourseGroups.push({ key, ...val });
     });
 
     return { regularTasks: regular, courseGroups: multiCourseGroups };
+  };
+
+  // رندر هوشمند کارهای هر بخش همراه با تجمیع کارت‌های دوره‌ای
+  const renderTaskBucketList = (taskList: Task[], contextLabel?: string) => {
+    const { regularTasks, courseGroups } = groupCourseTasks(taskList);
+    return (
+      <div className="space-y-2">
+        {courseGroups.map((group) => {
+          const goal = goals.find((g) => g.id === group.goalId);
+          return (
+            <CourseTaskSeriesCard
+              key={group.key}
+              courseTitle={group.title}
+              goal={goal}
+              tasks={group.tasks}
+              contextLabel={contextLabel}
+            />
+          );
+        })}
+        {regularTasks.map((task) => (
+          <TaskItem key={task.id} task={task} />
+        ))}
+      </div>
+    );
   };
 
   // انتقال سریع تمام کارهای معوقه به امروز با یک کلیک
@@ -193,11 +217,11 @@ export const TasksView: React.FC = () => {
               <span>مدیریت کارها و وظایف</span>
             </h2>
             <span className="text-[11px] font-bold bg-stone-200/70 text-stone-700 px-2 py-0.5 rounded-md font-mono">
-              {toPersianDigits(pendingTasks.length)} اقدام جاری
+              {toPersianDigits(pendingTasks.length)} کار در جریان
             </span>
           </div>
           <p className="text-xs text-stone-500 mt-1">
-            ساماندهی اقدامات عملیاتی؛ تفکیک شده بر اساس زمان‌بندی هوشمند، اولویت‌ها و حوزه‌های زندگی.
+            فهرست کارهای روزمره به تفکیک زمان، اولویت و حوزه‌ها.
           </p>
         </div>
 
@@ -230,7 +254,7 @@ export const TasksView: React.FC = () => {
             onClick={() => store.setChecklistDrawerOpen(true)}
             className="text-emerald-700 font-bold hover:underline cursor-pointer"
           >
-            چک‌لیست ۶ حوزه
+            چک‌لیست روزانه
           </button>
           <span>ثبت کنید تا لیست کارها خلوت و هدفمند بماند.</span>
         </div>
@@ -242,10 +266,10 @@ export const TasksView: React.FC = () => {
           {/* فیلترهای حالت نمایش */}
           <div className="flex items-center gap-1.5 overflow-x-auto pb-1 max-w-full">
             {[
-              { id: 'smart', label: 'دسته‌بندی هوشمند', badge: null },
+              { id: 'smart', label: 'دسته‌بندی زمانی', badge: null },
               { id: 'today', label: 'امروز', badge: todayTasksList.length },
               { id: 'overdue', label: 'معوقه‌ها', badge: overdueTasks.length, alert: true },
-              { id: 'high_priority', label: 'فوری و مهم 🔥', badge: highPriorityCount },
+              { id: 'high_priority', label: 'اولویت بالا', badge: highPriorityCount },
               { id: 'week', label: 'هفته جاری', badge: null },
               { id: 'completed', label: 'انجام‌شده', badge: completedTasks.length },
               { id: 'all', label: 'همه', badge: totalTasks },
@@ -299,7 +323,7 @@ export const TasksView: React.FC = () => {
                 : 'bg-white text-stone-600 border-stone-200 hover:bg-stone-50'
             }`}
           >
-            تمام حوزه‌ها
+            همه حوزه‌ها
           </button>
           {availableDomains.map((g) => (
             <button
@@ -333,7 +357,7 @@ export const TasksView: React.FC = () => {
             {searchQuery ? 'کاری منطبق بر جستجوی شما یافت نشد' : 'در این بخش کاری وجود ندارد'}
           </div>
           <p className="text-xs text-stone-500 max-w-sm mx-auto">
-            ذهن خود را سبک نگه دارید؛ هر اقدام جدیدی دارید ثبت کنید.
+            کاری در این بخش ثبت نشده است.
           </p>
           <button
             onClick={() => store.setQuickAddModalOpen(true, 'task')}
@@ -354,7 +378,7 @@ export const TasksView: React.FC = () => {
                 <div className="flex items-center gap-2 font-bold">
                   <AlertCircle size={16} className="text-rose-600 shrink-0" />
                   <span>
-                    اقدامات معوقه ({toPersianDigits(timeBuckets.overdue.length)} کار عقب‌افتاده)
+                    کارهای معوقه ({toPersianDigits(timeBuckets.overdue.length)})
                   </span>
                 </div>
                 <button
@@ -367,11 +391,7 @@ export const TasksView: React.FC = () => {
                 </button>
               </div>
 
-              <div className="space-y-2">
-                {timeBuckets.overdue.map((task) => (
-                  <TaskItem key={task.id} task={task} />
-                ))}
-              </div>
+              {renderTaskBucketList(timeBuckets.overdue, 'جلسات معوقه دوره')}
             </div>
           )}
 
@@ -380,13 +400,9 @@ export const TasksView: React.FC = () => {
             <div className="space-y-2.5">
               <div className="flex items-center gap-2 text-xs font-black text-stone-900 bg-amber-100/60 border border-amber-200/70 px-3 py-1.5 rounded-xl w-fit">
                 <Clock size={14} className="text-amber-700" />
-                <span>برنامه امروز ({toPersianDigits(timeBuckets.todayTasks.length)} اقدام)</span>
+                <span>کارهای امروز ({toPersianDigits(timeBuckets.todayTasks.length)})</span>
               </div>
-              <div className="space-y-2">
-                {timeBuckets.todayTasks.map((task) => (
-                  <TaskItem key={task.id} task={task} />
-                ))}
-              </div>
+              {renderTaskBucketList(timeBuckets.todayTasks, 'جلسه امروز دوره')}
             </div>
           )}
 
@@ -395,13 +411,9 @@ export const TasksView: React.FC = () => {
             <div className="space-y-2.5">
               <div className="flex items-center gap-2 text-xs font-bold text-stone-700 border-b border-stone-200/80 pb-1 pt-2">
                 <CalendarDays size={14} className="text-stone-600" />
-                <span>به‌زودی در این هفته ({toPersianDigits(timeBuckets.thisWeekTasks.length)} اقدام)</span>
+                <span>این هفته ({toPersianDigits(timeBuckets.thisWeekTasks.length)})</span>
               </div>
-              <div className="space-y-2">
-                {timeBuckets.thisWeekTasks.map((task) => (
-                  <TaskItem key={task.id} task={task} />
-                ))}
-              </div>
+              {renderTaskBucketList(timeBuckets.thisWeekTasks, 'جلسات این هفته دوره')}
             </div>
           )}
 
@@ -410,13 +422,9 @@ export const TasksView: React.FC = () => {
             <div className="space-y-2.5">
               <div className="flex items-center gap-2 text-xs font-bold text-stone-600 border-b border-stone-200/80 pb-1 pt-2">
                 <Calendar size={14} className="text-stone-500" />
-                <span>برنامه‌های آینده و هفته‌های بعد ({toPersianDigits(timeBuckets.upcomingTasks.length)})</span>
+                <span>کارهای آینده ({toPersianDigits(timeBuckets.upcomingTasks.length)})</span>
               </div>
-              <div className="space-y-2">
-                {timeBuckets.upcomingTasks.map((task) => (
-                  <TaskItem key={task.id} task={task} />
-                ))}
-              </div>
+              {renderTaskBucketList(timeBuckets.upcomingTasks, 'جلسات آینده دوره')}
             </div>
           )}
 
@@ -425,13 +433,9 @@ export const TasksView: React.FC = () => {
             <div className="space-y-2.5">
               <div className="flex items-center gap-2 text-xs font-bold text-stone-500 border-b border-stone-200/80 pb-1 pt-2">
                 <Inbox size={14} className="text-stone-400" />
-                <span>صندوق ورودی بدون تاریخ مشخص ({toPersianDigits(timeBuckets.noDateTasks.length)})</span>
+                <span>بدون تاریخ سررسید ({toPersianDigits(timeBuckets.noDateTasks.length)})</span>
               </div>
-              <div className="space-y-2">
-                {timeBuckets.noDateTasks.map((task) => (
-                  <TaskItem key={task.id} task={task} />
-                ))}
-              </div>
+              {renderTaskBucketList(timeBuckets.noDateTasks, 'جلسات بدون تاریخ')}
             </div>
           )}
 
@@ -439,28 +443,7 @@ export const TasksView: React.FC = () => {
       ) : (
         /* لیست فیلترشده با تجمیع کارت‌های دوره‌ای */
         <div className="space-y-3">
-          {(() => {
-            const { regularTasks, courseGroups } = groupCourseTasks(filteredTasks);
-            return (
-              <>
-                {courseGroups.map((group) => {
-                  const goal = goals.find((g) => g.id === group.goalId);
-                  return (
-                    <CourseTaskSeriesCard
-                      key={group.key}
-                      courseTitle={group.title}
-                      goal={goal}
-                      tasks={group.tasks}
-                    />
-                  );
-                })}
-
-                {regularTasks.map((task) => (
-                  <TaskItem key={task.id} task={task} />
-                ))}
-              </>
-            );
-          })()}
+          {renderTaskBucketList(filteredTasks, 'بسته جلسات دوره')}
         </div>
       )}
 

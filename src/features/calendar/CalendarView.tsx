@@ -151,16 +151,16 @@ export const CalendarView: React.FC = () => {
           {/* فلش‌های قبلی و بعدی */}
           <div className="flex items-center gap-1 bg-stone-100 rounded-lg p-0.5 border border-stone-200">
             <button
-              onClick={handleNextMonth}
+              onClick={handlePrevMonth}
               className="p-1.5 text-stone-600 hover:text-stone-950 hover:bg-stone-200 rounded-md transition-colors cursor-pointer"
-              title="ماه بعد"
+              title="ماه قبل"
             >
               <ChevronRight size={17} />
             </button>
             <button
-              onClick={handlePrevMonth}
+              onClick={handleNextMonth}
               className="p-1.5 text-stone-600 hover:text-stone-950 hover:bg-stone-200 rounded-md transition-colors cursor-pointer"
-              title="ماه قبل"
+              title="ماه بعد"
             >
               <ChevronLeft size={17} />
             </button>

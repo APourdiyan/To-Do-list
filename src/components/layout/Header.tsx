@@ -14,6 +14,8 @@ import {
   Sparkles,
   BookOpen,
   LayoutGrid,
+  User,
+  BookCheck,
 } from 'lucide-react';
 import { ActiveTab } from '../../types';
 import { AndroidSettingsSheet } from './AndroidSettingsSheet';
@@ -65,11 +67,11 @@ export const Header: React.FC = () => {
                   دفتر زندگی من
                 </h1>
                 <span className="text-[9px] sm:text-[10px] font-bold bg-amber-100/80 text-amber-900 px-1.5 py-0.5 rounded-md border border-amber-200/60">
-                  نسخه اندروید
+                  برنامه‌ریزی روزانه و اهداف
                 </span>
               </div>
               <p className="text-[10px] sm:text-[11px] text-stone-500 hidden sm:block font-normal mt-0.5">
-                زندگی‌ات را روی تقویم ببین
+                برنامه‌ریزی شخصی، تقویم و کارها
               </p>
             </div>
           </div>
@@ -111,6 +113,26 @@ export const Header: React.FC = () => {
                 </div>
               )}
             </div>
+
+            {/* کلید چک‌لیست کارهای روزانه */}
+            <button
+              onClick={() => store.setChecklistDrawerOpen(true)}
+              className="flex items-center gap-1.5 px-2.5 py-1.5 text-xs font-bold text-stone-800 hover:text-stone-950 bg-amber-50 hover:bg-amber-100/80 border border-amber-200/90 rounded-xl transition-colors cursor-pointer"
+              title="مشاهده و تیک زدن کارهای روزانه و روتین‌ها"
+            >
+              <BookCheck size={14} className="text-amber-700" />
+              <span className="hidden sm:inline">کارهای روزانه</span>
+            </button>
+
+            {/* کلید پروفایل کاربری و ذخیره ابری */}
+            <button
+              onClick={() => store.setProfileModalOpen(true)}
+              className="flex items-center gap-1.5 px-2.5 py-1.5 text-xs text-stone-700 hover:text-stone-900 bg-stone-100 hover:bg-stone-200/80 border border-stone-200/90 rounded-xl transition-colors cursor-pointer"
+              title="پروفایل، همگام‌سازی ابری و انتقال به گوشی جدید"
+            >
+              <User size={14} className="text-stone-700" />
+              <span className="hidden sm:inline">پروفایل</span>
+            </button>
 
             {/* کلید راهنمای استفاده از دفتر */}
             <button
@@ -181,7 +203,7 @@ export const Header: React.FC = () => {
                     >
                       <span className="flex items-center gap-1.5">
                         <LayoutGrid size={13} className="text-amber-700" />
-                        <span>ساختار ۶ حوزه بنیادین زندگی</span>
+                        <span>نمای دسته‌بندی‌شده کارها</span>
                       </span>
                       <span className={`text-[11px] font-bold ${settings.lifeDomainsMode ? 'text-amber-900' : 'text-stone-400'}`}>
                         {settings.lifeDomainsMode ? 'فعال' : 'غیرفعال'}
@@ -196,7 +218,7 @@ export const Header: React.FC = () => {
                       }}
                       className="w-full px-3 py-2 text-xs text-stone-700 hover:bg-stone-50 flex items-center justify-between cursor-pointer"
                     >
-                      <span>نمایش تاریخ میلادی ثانویه</span>
+                      <span>نمایش تاریخ میلادی در تقویم</span>
                       <span className="text-[11px] font-semibold text-stone-500">
                         {settings.showGregorian ? 'فعال' : 'غیرفعال'}
                       </span>
@@ -224,7 +246,7 @@ export const Header: React.FC = () => {
                       }}
                       className="w-full px-3 py-2 text-xs text-stone-700 hover:bg-stone-50 flex items-center justify-between cursor-pointer"
                     >
-                      <span>راهنمای ۳ گام شروع روز</span>
+                      <span>راهنمای شروع روز</span>
                       <span className="text-[11px] font-semibold text-stone-500">
                         {!settings.hideGuideBanner ? 'فعال' : 'پنهان'}
                       </span>

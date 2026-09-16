@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import { useStore, store } from '../../store/useStore';
 import {
   getTodayJalali,
@@ -12,6 +12,8 @@ import {
 } from '../../lib/date/jalali';
 import { getOccasionForDate } from '../../data/holidays';
 import { TaskItem } from '../../components/tasks/TaskItem';
+import { CourseTaskSeriesCard } from '../../components/tasks/CourseTaskSeriesCard';
+import { Task } from '../../types';
 import { InlinePersianMonthCalendar } from '../../components/calendar/InlinePersianMonthCalendar';
 import { TodayGuideBanner } from '../../components/today/TodayGuideBanner';
 import { TodayFocusBar } from '../../components/today/TodayFocusBar';
@@ -36,10 +38,21 @@ import {
   GraduationCap,
   LayoutGrid,
   List,
+  Settings2,
+  BookCheck,
 } from 'lucide-react';
 
 export const TodayView: React.FC = () => {
-  const { tasks, goals, events, domainGroups, settings, selectedDate } = useStore();
+  const {
+    tasks,
+    goals,
+    events,
+    domainGroups,
+    settings,
+    selectedDate,
+    checklistItems,
+    checklistLogs,
+  } = useStore();
   const today = getTodayJalali();
   const activeDate = selectedDate || today.dateStr;
   const occasion = getOccasionForDate(activeDate);
@@ -54,9 +67,48 @@ export const TodayView: React.FC = () => {
   const completedTodayTasks = todayTasks.filter((t) => !!t.completedAt);
   const pendingTodayTasks = todayTasks.filter((t) => !t.completedAt);
 
+  // تفکیک کارهای دوره‌ای از کارهای عادی روزانه جهت جلوگیری از شلوغی و اشغال فضا
+  const { regularTodayTasks, todayCourseGroups } = useMemo(() => {
+    const courseMap = new Map<string, { title: string; goalId?: string; tasks: Task[] }>();
+    const regular: Task[] = [];
+
+    pendingTodayTasks.forEach((task) => {
+      const match = task.title.match(/جلسه\s+\d+\s+از\s+دوره\s+«?(.*?)»?(\s+\(|$)/);
+      const matchedCourseTitle = match ? match[1].trim() : null;
+
+      if (task.goalId) {
+        const goal = goals.find((g) => g.id === task.goalId);
+        if (goal?.courseDetails || matchedCourseTitle) {
+          const groupKey = `goal-${task.goalId}`;
+          const title = goal?.title || matchedCourseTitle || 'دوره آموزشی';
+          if (!courseMap.has(groupKey)) {
+            courseMap.set(groupKey, { title, goalId: task.goalId, tasks: [] });
+          }
+          courseMap.get(groupKey)!.tasks.push(task);
+          return;
+        }
+      } else if (matchedCourseTitle) {
+        const groupKey = `title-${matchedCourseTitle}`;
+        if (!courseMap.has(groupKey)) {
+          courseMap.set(groupKey, { title: matchedCourseTitle, tasks: [] });
+        }
+        courseMap.get(groupKey)!.tasks.push(task);
+        return;
+      }
+      regular.push(task);
+    });
+
+    const groups: { key: string; title: string; goalId?: string; tasks: Task[] }[] = [];
+    courseMap.forEach((val, key) => {
+      groups.push({ key, ...val });
+    });
+
+    return { regularTodayTasks: regular, todayCourseGroups: groups };
+  }, [pendingTodayTasks, goals]);
+
   // تفکیک کارهای دارای اولویت بالا برای وضوح تصمیم‌گیری
-  const highPriorityTasks = pendingTodayTasks.filter((t) => t.priority === 'high');
-  const regularPriorityTasks = pendingTodayTasks.filter((t) => t.priority !== 'high');
+  const highPriorityTasks = regularTodayTasks.filter((t) => t.priority === 'high' || t.priority === 'urgent');
+  const regularPriorityTasks = regularTodayTasks.filter((t) => t.priority !== 'high' && t.priority !== 'urgent');
 
   // رویدادهای روز
   const todayEvents = events.filter((e) => e.date === activeDate);
@@ -78,67 +130,104 @@ export const TodayView: React.FC = () => {
   );
 
   return (
-    <div className="max-w-5xl mx-auto px-3 sm:px-6 py-3 sm:py-6 space-y-4 sm:space-y-5" dir="rtl">
-      
-      {/* ۱. تقویم خورشیدی در صفحه اصلی با جایگزینی بخش تیره و حفظ اطلاعات کلیدی زیر آن */}
-      <InlinePersianMonthCalendar />
+    <div className="max-w-7xl mx-auto px-3 sm:px-6 py-3 sm:py-6" dir="rtl">
+      {/* ساختار دو ستونه ارگونومیک دسکتاپ (مشابه Things 3 و TickTick) و تک‌ستونه روان موبایل */}
+      <div className="grid grid-cols-1 lg:grid-cols-12 gap-5 items-start">
+        
+        {/* ستون کناری: تقویم ماهانه/هفتگی و نیت روزانه (در دسکتاپ چسبان و همیشه در دید) */}
+        <div className="lg:col-span-5 lg:sticky lg:top-18 space-y-4">
+          <InlinePersianMonthCalendar />
+          <TodayFocusBar />
+        </div>
 
-      {/* ۲. بنر راهنمای شفافیت و شروع روز (قابل بستن توسط کاربر) */}
-      <TodayGuideBanner onOpenPhilosophyModal={() => store.setPhilosophyModalOpen(true)} />
+        {/* ستون اصلی: بنر راهنما، رویدادها، اقدامات روز، اهداف فعال و افق پیش‌رو */}
+        <div className="lg:col-span-7 space-y-5">
+          {/* بنر راهنمای شفافیت و شروع روز (قابل بستن توسط کاربر) */}
+          <TodayGuideBanner onOpenPhilosophyModal={() => store.setPhilosophyModalOpen(true)} />
 
-      {/* ۳. نوار نیت و تمرکز روز + انتخاب حال‌وهوای امروز */}
-      <TodayFocusBar />
-
-      {/* ۴. قرارهای زمانی و رویدادهای امروز (اگر ثبت شده باشد) */}
-      {todayEvents.length > 0 && (
-        <section className="space-y-3">
-          <h3 className="text-sm font-bold text-stone-800 flex items-center gap-2">
-            <Clock size={16} className="text-amber-700" />
-            <span>قرارهای زمانی و رویدادهای امروز</span>
-          </h3>
-
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-            {todayEvents.map((evt) => (
-              <div
-                key={evt.id}
-                className="bg-amber-50/50 border border-amber-200/80 rounded-xl p-3.5 flex items-start justify-between gap-3"
-              >
-                <div className="space-y-1">
-                  <div className="text-xs font-bold text-stone-900">
-                    {evt.title}
-                  </div>
-                  {evt.description && (
-                    <div className="text-xs text-stone-600">
-                      {evt.description}
-                    </div>
-                  )}
-                  {evt.startTime && (
-                    <div className="text-[11px] text-amber-900 font-mono font-medium flex items-center gap-1 mt-1">
-                      <Clock size={11} />
-                      <span>
-                        ساعت {evt.startTime}
-                        {evt.endTime ? ` تا ${evt.endTime}` : ''}
-                      </span>
-                    </div>
-                  )}
-                </div>
-
-                <span className="text-[10px] font-semibold px-2 py-0.5 rounded bg-white/80 text-amber-900 border border-amber-200">
-                  {evt.type === 'appointment'
-                    ? 'قرار کاری'
-                    : evt.type === 'exam'
-                    ? 'امتحان / آزمون'
-                    : evt.type === 'birthday'
-                    ? 'زادروز'
-                    : 'رویداد'}
-                </span>
+          {/* دسترسی مستقیم به کارهای روزانه و روتین‌ها */}
+          <div className="bg-gradient-to-l from-amber-500/10 via-amber-100/30 to-white border border-amber-200/90 rounded-2xl p-4 shadow-xs flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 rounded-xl bg-amber-400 text-stone-950 flex items-center justify-center shrink-0 shadow-2xs">
+                <BookCheck size={20} className="stroke-[2.2]" />
               </div>
-            ))}
-          </div>
-        </section>
-      )}
+              <div>
+                <div className="flex items-center gap-2 flex-wrap">
+                  <h3 className="text-xs sm:text-sm font-black text-stone-900">
+                    کارهای روزانه و روتین‌های من
+                  </h3>
+                  <span className="text-[10px] font-bold bg-amber-200/80 text-amber-950 px-2 py-0.5 rounded-full font-mono">
+                    {toPersianDigits((checklistLogs[activeDate] || []).length)} از {toPersianDigits(checklistItems.length)} انجام شده
+                  </span>
+                </div>
+                <p className="text-[11px] text-stone-500 mt-0.5">
+                  دسته‌بندی‌ها و عناوین قابل ویرایش • برای علامت‌زدن یا ویرایش ضربه بزنید
+                </p>
+              </div>
+            </div>
 
-      {/* ۵. کارهای روز انتخاب‌شده (تقویم‌محور و متصل به تاریخ فعال) */}
+            <div className="flex items-center gap-2 self-end sm:self-auto shrink-0">
+              <button
+                type="button"
+                onClick={() => store.setChecklistDrawerOpen(true)}
+                className="px-3.5 py-2 bg-stone-900 hover:bg-stone-800 active:bg-black text-stone-100 rounded-xl text-xs font-bold flex items-center gap-1.5 shadow-2xs transition-all cursor-pointer"
+              >
+                <span>باز کردن کارهای روزانه</span>
+                <ArrowLeft size={14} />
+              </button>
+            </div>
+          </div>
+
+          {/* ۴. قرارهای زمانی و رویدادهای امروز (اگر ثبت شده باشد) */}
+          {todayEvents.length > 0 && (
+            <section className="space-y-3">
+              <h3 className="text-sm font-bold text-stone-800 flex items-center gap-2">
+                <Clock size={16} className="text-amber-700" />
+                <span>قرارهای زمانی و رویدادهای امروز</span>
+              </h3>
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                {todayEvents.map((evt) => (
+                  <div
+                    key={evt.id}
+                    className="bg-amber-50/50 border border-amber-200/80 rounded-xl p-3.5 flex items-start justify-between gap-3"
+                  >
+                    <div className="space-y-1">
+                      <div className="text-xs font-bold text-stone-900">
+                        {evt.title}
+                      </div>
+                      {evt.description && (
+                        <div className="text-xs text-stone-600">
+                          {evt.description}
+                        </div>
+                      )}
+                      {evt.startTime && (
+                        <div className="text-[11px] text-amber-900 font-mono font-medium flex items-center gap-1 mt-1">
+                          <Clock size={11} />
+                          <span>
+                            ساعت {evt.startTime}
+                            {evt.endTime ? ` تا ${evt.endTime}` : ''}
+                          </span>
+                        </div>
+                      )}
+                    </div>
+
+                    <span className="text-[10px] font-semibold px-2 py-0.5 rounded bg-white/80 text-amber-900 border border-amber-200">
+                      {evt.type === 'appointment'
+                        ? 'قرار کاری'
+                        : evt.type === 'exam'
+                        ? 'امتحان / آزمون'
+                        : evt.type === 'birthday'
+                        ? 'زادروز'
+                        : 'رویداد'}
+                    </span>
+                  </div>
+                ))}
+              </div>
+            </section>
+          )}
+
+          {/* ۵. کارهای روز انتخاب‌شده (تقویم‌محور و متصل به تاریخ فعال) */}
       <section className="space-y-4">
         {/* بنر آگاهی‌بخش در صورتی که کاربری تاریخی غیر از امروز را انتخاب کرده باشد */}
         {activeDate !== today.dateStr && (
@@ -164,17 +253,17 @@ export const TodayView: React.FC = () => {
             <h3 className="text-base font-bold text-stone-900">
               {activeDate === today.dateStr
                 ? settings.lifeDomainsMode
-                  ? 'اقدامات امروز در ۶ حوزه زندگی'
-                  : 'اقدامات و کارهای امروز'
-                : `اقدامات روز ${formatJalaliDate(activeDate, { showWeekday: true, showMonthName: true })}`}
+                  ? `حوزه‌های زندگی (${toPersianDigits(domainGroups.length)} حوزه فعال)`
+                  : 'کارهای امروز'
+                : `کارهای روز ${formatJalaliDate(activeDate, { showWeekday: true, showMonthName: true })}`}
             </h3>
             <span className="text-xs font-normal text-stone-500 font-mono">
-              ({toPersianDigits(todayTasks.length)} اقدام)
+              ({toPersianDigits(todayTasks.length)} مورد)
             </span>
           </div>
 
-          {/* سوئیچر اختیاری بین حالت کلاسیک و ساختار ۶ حوزه زندگی */}
-          <div className="flex items-center gap-2 self-start sm:self-auto">
+          {/* سوئیچر اختیاری بین حالت استاندارد و ابعاد زندگی */}
+          <div className="flex items-center gap-2 self-start sm:self-auto flex-wrap">
             <div className="flex items-center bg-stone-100 p-0.5 rounded-xl border border-stone-200/80 text-xs">
               <button
                 type="button"
@@ -184,7 +273,7 @@ export const TodayView: React.FC = () => {
                     ? 'bg-white text-stone-900 shadow-2xs font-bold'
                     : 'text-stone-600 hover:text-stone-900'
                 }`}
-                title="نمایش پیوسته اولویت‌ها و اقدامات"
+                title="نمایش پیوسته کارها"
               >
                 <List size={13} />
                 <span>لیست استاندارد</span>
@@ -198,19 +287,31 @@ export const TodayView: React.FC = () => {
                     ? 'bg-stone-900 text-stone-100 shadow-2xs font-bold'
                     : 'text-stone-600 hover:text-stone-900'
                 }`}
-                title="ساماندهی بر مبنای ۶ ستون معنوی، شغلی، مطالعاتی، مهارتی، ورزشی و روزمره"
+                title="دسته‌بندی موضوعی کارها"
               >
                 <LayoutGrid size={13} />
-                <span>ساختار ۶ حوزه</span>
+                <span>دسته‌بندی موضوعی</span>
               </button>
             </div>
+
+            {settings.lifeDomainsMode && (
+              <button
+                type="button"
+                onClick={() => store.setManageDomainsModalOpen(true)}
+                className="text-xs font-semibold text-stone-700 hover:text-stone-950 flex items-center gap-1 bg-stone-100 hover:bg-stone-200/70 px-2.5 py-1 rounded-lg border border-stone-200 transition-colors cursor-pointer"
+                title="شخصی‌سازی دسته‌ها"
+              >
+                <Settings2 size={13} className="text-amber-700" />
+                <span className="hidden sm:inline">شخصی‌سازی دسته‌ها</span>
+              </button>
+            )}
 
             <button
               onClick={() => store.setQuickAddModalOpen(true, 'task')}
               className="text-xs font-semibold text-stone-800 hover:text-stone-950 flex items-center gap-1 bg-stone-100 hover:bg-stone-200/70 px-2.5 py-1 rounded-lg border border-stone-200 transition-colors cursor-pointer"
             >
               <Plus size={13} />
-              <span className="hidden sm:inline">فرم تفصیلی</span>
+              <span className="hidden sm:inline">افزودن با جزئیات</span>
             </button>
           </div>
         </div>
@@ -218,7 +319,7 @@ export const TodayView: React.FC = () => {
         {/* یادآوری تفاوت کارها با چک‌لیست عادات */}
         <div className="text-[11px] text-stone-500 bg-stone-100/60 border border-stone-200/60 px-3 py-1.5 rounded-xl flex items-center justify-between gap-2">
           <span>
-            💡 <strong>اقدامات روزانه:</strong> کارهای مشخص و تاریخ‌دار | برای عادات و روتین‌های روزمره، از <strong>چک‌لیست ۶ حوزه</strong> استفاده کنید.
+            💡 برای عادات و کارهای تکرارشونده، از <strong>چک‌لیست روزانه</strong> استفاده کنید.
           </span>
           <button
             onClick={() => store.setChecklistDrawerOpen(true)}
@@ -264,7 +365,7 @@ export const TodayView: React.FC = () => {
                   <div className="space-y-2">
                     <div className="flex items-center gap-1.5 text-xs font-bold text-rose-800 bg-rose-50/70 border border-rose-200/60 px-3 py-1.5 rounded-xl w-fit">
                       <Flame size={13} className="fill-rose-600 text-rose-600" />
-                      <span>اولویت‌های کلیدی امروز (اول از همه این‌ها را انجام بده)</span>
+                      <span>کارهای با اولویت بالا</span>
                     </div>
                     <div className="space-y-2.5">
                       {highPriorityTasks.map((task) => (
@@ -274,13 +375,37 @@ export const TodayView: React.FC = () => {
                   </div>
                 )}
 
-                {/* ب) سایر کارهای امروز */}
+                {/* ب) جلسات دوره‌ای و آموزشی امروز با تجمیع هوشمند و زیرفهرست */}
+                {todayCourseGroups.length > 0 && (
+                  <div className="space-y-2">
+                    <div className="flex items-center gap-1.5 text-xs font-bold text-amber-900 bg-amber-100/70 border border-amber-200/60 px-3 py-1.5 rounded-xl w-fit">
+                      <GraduationCap size={13} className="text-amber-800" />
+                      <span>دوره‌های آموزشی امروز ({toPersianDigits(todayCourseGroups.length)} دوره)</span>
+                    </div>
+                    <div className="space-y-2">
+                      {todayCourseGroups.map((group) => {
+                        const goal = goals.find((g) => g.id === group.goalId);
+                        return (
+                          <CourseTaskSeriesCard
+                            key={group.key}
+                            courseTitle={group.title}
+                            goal={goal}
+                            tasks={group.tasks}
+                            contextLabel="جلسه امروز دوره"
+                          />
+                        );
+                      })}
+                    </div>
+                  </div>
+                )}
+
+                {/* ج) سایر کارهای امروز */}
                 {regularPriorityTasks.length > 0 && (
                   <div className="space-y-2">
-                    {highPriorityTasks.length > 0 && (
+                    {(highPriorityTasks.length > 0 || todayCourseGroups.length > 0) && (
                       <div className="text-xs font-bold text-stone-600 flex items-center gap-1 pt-1">
                         <ListTodo size={13} />
-                        <span>سایر کارهای برنامه‌ریزی‌شده</span>
+                        <span>سایر کارهای امروز</span>
                       </div>
                     )}
                     <div className="space-y-2.5">
@@ -291,13 +416,13 @@ export const TodayView: React.FC = () => {
                   </div>
                 )}
 
-                {/* ج) کارهای انجام‌شده امروز */}
+                {/* د) کارهای انجام‌شده امروز */}
                 {completedTodayTasks.length > 0 && (
                   <div className="pt-3 border-t border-stone-200/60 space-y-2">
                     <div className="text-xs font-semibold text-stone-500 flex items-center gap-1.5">
                       <CheckCircle2 size={13} className="text-emerald-700" />
                       <span>
-                        اقدامات انجام‌شده ({toPersianDigits(completedTodayTasks.length)})
+                        کارهای انجام‌شده ({toPersianDigits(completedTodayTasks.length)})
                       </span>
                     </div>
                     <div className="space-y-2 opacity-85">
@@ -316,22 +441,22 @@ export const TodayView: React.FC = () => {
       {/* ۶. دفترچه یادداشت، تأمل و تخلیه ذهن امروز (Daily Margin & Scratchpad) */}
       <TodayJournalPad />
 
-      {/* ۷. افق‌های فعال زندگی در صفحه اصلی (جمع‌وجور در یک نگاه، با نوار پیشرفت و تاریخ، کلیک برای جزئیات) */}
+      {/* ۷. اهداف فعال در صفحه اصلی */}
       {activeGoals.length > 0 && (
         <section className="space-y-2">
           <div className="flex items-center justify-between">
             <h3 className="text-xs sm:text-sm font-bold text-stone-800 flex items-center gap-1.5">
               <Compass size={14} className="text-stone-700" />
-              <span>افق‌های فعال زندگی در این مقطع</span>
+              <span>اهداف فعال</span>
               <span className="text-[10px] text-stone-400 font-normal">
-                (کلیک برای جزئیات و ثبت مطالعه)
+                (کلیک برای جزئیات بیشتر)
               </span>
             </h3>
             <button
               onClick={() => store.setActiveTab('goals')}
               className="text-xs text-stone-500 hover:text-stone-800 font-medium flex items-center gap-1"
             >
-              <span>مشاهده تمام اهداف</span>
+              <span>مشاهده همه اهداف</span>
               <ArrowLeft size={11} />
             </button>
           </div>
@@ -497,6 +622,8 @@ export const TodayView: React.FC = () => {
         </section>
       )}
 
+        </div>
+      </div>
     </div>
   );
 };

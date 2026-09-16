@@ -13,6 +13,8 @@ import {
   Clock,
   Tag,
   AlertCircle,
+  Bell,
+  Volume2,
 } from 'lucide-react';
 
 export const QuickAddModal: React.FC = () => {
@@ -38,6 +40,9 @@ export const QuickAddModal: React.FC = () => {
   const [taskGroupId, setTaskGroupId] = useState(domainGroups[0]?.id || 'work');
   const [taskDueDate, setTaskDueDate] = useState(selectedDate || today.dateStr);
   const [taskDueTime, setTaskDueTime] = useState('');
+  const [taskHasAlarm, setTaskHasAlarm] = useState(false);
+  const [taskAlarmMinutesBefore, setTaskAlarmMinutesBefore] = useState(0);
+  const [taskAlarmSound, setTaskAlarmSound] = useState(true);
   const [taskPriority, setTaskPriority] = useState<Priority>('medium');
   const [taskGoalId, setTaskGoalId] = useState('');
 
@@ -73,6 +78,9 @@ export const QuickAddModal: React.FC = () => {
         groupId: taskGroupId,
         dueDate: taskDueDate,
         dueTime: taskDueTime.trim() || undefined,
+        hasAlarm: taskHasAlarm,
+        alarmMinutesBefore: taskHasAlarm ? taskAlarmMinutesBefore : undefined,
+        alarmSound: taskHasAlarm ? taskAlarmSound : undefined,
         priority: taskPriority,
         goalId: taskGoalId || undefined,
         subtasks: [],
@@ -239,39 +247,132 @@ export const QuickAddModal: React.FC = () => {
                 onChange={setTaskDueDate}
               />
 
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                {/* ساعت انجام */}
-                <div>
-                  <label className="text-xs font-semibold text-stone-700 block mb-1">
-                    ساعت مشخص (اختیاری)
+              {/* ساعت انجام و آلارم اختیاری */}
+              <div className="rounded-xl border border-stone-200 bg-stone-50/70 p-3 space-y-2.5">
+                <div className="flex items-center justify-between">
+                  <label className="text-xs font-bold text-stone-800 flex items-center gap-1.5">
+                    <Clock size={14} className="text-amber-700" />
+                    <span>ساعت مشخص انجام (اختیاری)</span>
                   </label>
+                  {taskDueTime && (
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setTaskDueTime('');
+                        setTaskHasAlarm(false);
+                      }}
+                      className="text-[10px] text-stone-400 hover:text-stone-700 cursor-pointer"
+                    >
+                      پاک کردن ساعت
+                    </button>
+                  )}
+                </div>
+
+                <div className="flex items-center gap-2">
                   <input
                     type="text"
                     value={taskDueTime}
                     onChange={(e) => setTaskDueTime(e.target.value)}
-                    placeholder="مثال: ۱۰:۳۰"
-                    className="w-full px-3 py-2 text-xs rounded-lg border border-stone-300 text-stone-800"
+                    placeholder="مثال: ۱۰:۳۰ یا ۱۴:۰۰"
+                    className="flex-1 px-3 py-1.5 text-xs rounded-lg border border-stone-300 text-stone-900 bg-white font-mono"
                   />
+                  <div className="flex items-center gap-1">
+                    {[
+                      { label: '۰۹:۰۰ صبح', time: '۰۹:۰۰' },
+                      { label: '۱۴:۰۰ ظهر', time: '۱۴:۰۰' },
+                      { label: '۱۸:۰۰ عصر', time: '۱۸:۰۰' },
+                      { label: '۲۱:۰۰ شب', time: '۲۱:۰۰' },
+                    ].map((preset) => (
+                      <button
+                        key={preset.time}
+                        type="button"
+                        onClick={() => setTaskDueTime(preset.time)}
+                        className={`text-[10px] px-2 py-1 rounded-md border transition-colors cursor-pointer ${
+                          taskDueTime === preset.time
+                            ? 'bg-amber-400 text-stone-950 border-amber-500 font-bold'
+                            : 'bg-white text-stone-600 border-stone-200 hover:bg-stone-100'
+                        }`}
+                      >
+                        {preset.label}
+                      </button>
+                    ))}
+                  </div>
                 </div>
 
-                {/* پیوند با هدف بالادستی */}
-                <div>
-                  <label className="text-xs font-semibold text-stone-700 block mb-1">
-                    پیوستن به مسیر / هدف (اختیاری)
-                  </label>
-                  <select
-                    value={taskGoalId}
-                    onChange={(e) => setTaskGoalId(e.target.value)}
-                    className="w-full px-3 py-2 text-xs rounded-lg border border-stone-300 text-stone-800 bg-white"
-                  >
-                    <option value="">بدون هدف (کار مستقل)</option>
-                    {goals.map((g) => (
-                      <option key={g.id} value={g.id}>
-                        {g.title}
-                      </option>
-                    ))}
-                  </select>
+                {/* گزینه اختیاری فعال‌سازی آلارم */}
+                <div className="pt-2 border-t border-stone-200/80 flex flex-col gap-2">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-2">
+                      <div className={`p-1 rounded-lg ${taskHasAlarm ? 'bg-amber-100 text-amber-800' : 'bg-stone-200 text-stone-500'}`}>
+                        <Bell size={14} />
+                      </div>
+                      <div>
+                        <span className="text-xs font-bold text-stone-900 block">فعال‌سازی زنگ آلارم و هشدار</span>
+                        <span className="text-[10px] text-stone-500">پخش زنگ صوتی سر ساعت مشخص</span>
+                      </div>
+                    </div>
+                    <label className="relative inline-flex items-center cursor-pointer">
+                      <input
+                        type="checkbox"
+                        checked={taskHasAlarm}
+                        onChange={(e) => {
+                          const checked = e.target.checked;
+                          setTaskHasAlarm(checked);
+                          if (checked && !taskDueTime) {
+                            setTaskDueTime('۱۰:۰۰');
+                          }
+                        }}
+                        className="sr-only peer"
+                      />
+                      <div className="w-9 h-5 bg-stone-200 peer-focus:outline-hidden rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-stone-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-amber-500"></div>
+                    </label>
+                  </div>
+
+                  {taskHasAlarm && (
+                    <div className="flex items-center justify-between pt-1 text-xs animate-in fade-in">
+                      <span className="text-[11px] text-stone-600">زمان هشدار:</span>
+                      <div className="flex items-center gap-1">
+                        {[
+                          { label: 'سر وقت', value: 0 },
+                          { label: '۱۵ دقیقه قبل', value: 15 },
+                          { label: '۳۰ دقیقه قبل', value: 30 },
+                        ].map((opt) => (
+                          <button
+                            key={opt.value}
+                            type="button"
+                            onClick={() => setTaskAlarmMinutesBefore(opt.value)}
+                            className={`text-[10px] px-2 py-0.5 rounded border transition-colors cursor-pointer ${
+                              taskAlarmMinutesBefore === opt.value
+                                ? 'bg-stone-900 text-stone-100 border-stone-900 font-bold'
+                                : 'bg-white text-stone-600 border-stone-200 hover:bg-stone-100'
+                            }`}
+                          >
+                            {opt.label}
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+                  )}
                 </div>
+              </div>
+
+              {/* پیوند با هدف بالادستی */}
+              <div>
+                <label className="text-xs font-semibold text-stone-700 block mb-1">
+                  پیوستن به مسیر / هدف (اختیاری)
+                </label>
+                <select
+                  value={taskGoalId}
+                  onChange={(e) => setTaskGoalId(e.target.value)}
+                  className="w-full px-3 py-2 text-xs rounded-lg border border-stone-300 text-stone-800 bg-white"
+                >
+                  <option value="">بدون هدف (کار مستقل)</option>
+                  {goals.map((g) => (
+                    <option key={g.id} value={g.id}>
+                      {g.title}
+                    </option>
+                  ))}
+                </select>
               </div>
 
               <div>
